@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <style>
+        canvas {
+            display: block;
+        }
+        *{
+            margin:0;
+
+        }
+    </style>
+    <title>Tree Visualization</title>
+</head>
+<body>
+    <div class="d-flex justify-content-center">
+        <a href="index.html"><button class="btn btn-success mt-1">Generar otro arbol con IA</button></a>
+    </div>
+    <div class="d-flex justify-content-center">
+        <canvas id="treeCanvas" width="1000" height="1000"></canvas>
+    </div>
+    <script>
+        var pi = Math.PI;
+        function tree(x, y, angle, depth, branch_length, ctx) {
+            if (depth === 0) {
+                return;
+            }
+            
+            let x2 = x + Math.cos(angle*(pi/180)-pi/2) * branch_length;
+            let y2 = y + Math.sin(angle*(pi/180)-pi/2) * branch_length;
+            /* console.log(x2)
+            console.log(y2)
+            console.log(angle*(pi/180)) */
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        
+            //arboles de rama
+            /* tree(x2, y2, angle - 60 / (1.5 + Math.random() * 2.5), depth - 1, branch_length/(1.2+Math.random()), ctx);
+            tree(x2, y2, angle + 60 / (1.5 + Math.random() * 2.5), depth - 1, branch_length/(1.2+Math.random()), ctx); */
+
+            tree(x2, y2, angle - 60 / (1.5 + Math.random() * 2.5), depth - 1, branch_length/(1.2+Math.random()), ctx);
+            tree(x2, y2, angle + 60 / (1.5 + Math.random() * 2.5), depth - 1, branch_length/(1.2+Math.random()), ctx);
+            tree(x2, y2, angle/ (1.5 + Math.random() * 2.5), depth - 1, branch_length/(1.2+Math.random()), ctx);
+        }
+
+        function drawTree() {
+            const canvas = document.getElementById('treeCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            tree(500, 700, Math.PI / 2, 10, 200, ctx);
+        }
+
+        drawTree();
+    </script>
+</body>
+</html>
