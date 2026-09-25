@@ -19,6 +19,8 @@ const Gen = (() => {
     ['rostros.html', 'Rostros'],
     ['carros.html', 'Carros'],
     ['casas.html', 'Casas'],
+    ['humanos.html', 'Humanos'],
+    ['mundo.html', 'Mundo'],
     ['antes_arboles.html', 'Versión anterior']
   ];
 
@@ -97,6 +99,12 @@ const Gen = (() => {
 
   function fondo(fn) { fn.bg = true; return fn; }
 
+  function navHTML() {
+    const here = location.pathname.split('/').pop() || 'index.html';
+    return NAV.map(([href, name]) =>
+      `<a href="${href}"${href === here ? ' class="active"' : ''}>${name}</a>`).join('');
+  }
+
   /* ---------- Interfaz y ciclo de vida ---------- */
 
   function crear(cfg) {
@@ -127,9 +135,7 @@ const Gen = (() => {
     }
 
     function buildUI() {
-      const here = location.pathname.split('/').pop() || 'index.html';
-      const nav = NAV.map(([href, name]) =>
-        `<a href="${href}"${href === here ? ' class="active"' : ''}>${name}</a>`).join('');
+      const nav = navHTML();
 
       const groups = [];
       controls.forEach(c => {
@@ -374,5 +380,5 @@ const Gen = (() => {
     regenerate(true);
   }
 
-  return { crear, fondo, mix, shade, rgba, roundedPoly };
+  return { crear, fondo, mix, shade, rgba, roundedPoly, makeRand, randomSeed, navHTML };
 })();
