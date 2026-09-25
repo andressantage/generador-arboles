@@ -63,6 +63,30 @@ const Ingles = (() => {
     postOffice: { en: 'post office', es: 'oficina de correos', g: 'f', icon: '📮' },
     fireStation: { en: 'fire station', es: 'estación de bomberos', g: 'f', icon: '🚒' },
     policeStation: { en: 'police station', es: 'estación de policía', g: 'f', icon: '🚓' },
+    restaurant: { en: 'restaurant', es: 'restaurante', g: 'm', icon: '🍽️' },
+    bank: { en: 'bank', es: 'banco', g: 'm', icon: '🏦' },
+    pharmacy: { en: 'pharmacy', es: 'farmacia', g: 'f', icon: '💊' },
+    cinema: { en: 'cinema', es: 'cine', g: 'm', icon: '🎬' },
+    museum: { en: 'museum', es: 'museo', g: 'm', icon: '🏛️' },
+    clothesStore: { en: 'clothes store', es: 'tienda de ropa', g: 'f', icon: '👕' },
+    gym: { en: 'gym', es: 'gimnasio', g: 'm', icon: '🏋️' },
+    hotel: { en: 'hotel', es: 'hotel', g: 'm', icon: '🏨' },
+    petShop: { en: 'pet shop', es: 'tienda de mascotas', g: 'f', icon: '🐾' },
+    toyStore: { en: 'toy store', es: 'juguetería', g: 'f', icon: '🧸' },
+    farm: { en: 'farm', es: 'granja', g: 'f', icon: '🚜' },
+    market: { en: 'market', es: 'mercado', g: 'm', icon: '🏪' },
+    square: { en: 'square', es: 'plaza', g: 'f', icon: '⛲' },
+    clockTower: { en: 'clock tower', es: 'torre del reloj', g: 'f', icon: '🕰️' },
+    field: { en: 'soccer field', es: 'cancha de fútbol', g: 'f', icon: '⚽' },
+    cow: { en: 'cow', es: 'vaca', g: 'f', icon: '🐄' },
+    pig: { en: 'pig', es: 'cerdo', g: 'm', icon: '🐖' },
+    sheep: { en: 'sheep', es: 'oveja', g: 'f', icon: '🐑' },
+    horse: { en: 'horse', es: 'caballo', g: 'm', icon: '🐎' },
+    chicken: { en: 'chicken', es: 'gallina', g: 'f', icon: '🐔' },
+    barn: { en: 'barn', es: 'granero', g: 'm', icon: '🛖' },
+    fence: { en: 'fence', es: 'cerca', g: 'f', icon: '🚧' },
+    stall: { en: 'market stall', es: 'puesto del mercado', g: 'm', icon: '🍎' },
+    goal: { en: 'goal', es: 'portería', g: 'f', icon: '🥅' },
     // Ropa y rasgos
     tshirt: { en: 'T-shirt', es: 'camiseta', g: 'f', icon: '👕' },
     shirt: { en: 'shirt', es: 'camisa', g: 'f', icon: '👔' },
@@ -100,7 +124,111 @@ const Ingles = (() => {
     supermarket: { n: N.supermarket, sign: 'SUPERMARKET', fact: ['You can buy food here.', 'Aquí puedes comprar comida.'], wall: '#dfe7fd', door: '#3d405b' },
     postOffice: { n: N.postOffice, sign: 'POST OFFICE', fact: ['You can send letters here.', 'Aquí puedes enviar cartas.'], wall: '#ffe5b4', door: '#2a6f97' },
     fireStation: { n: N.fireStation, sign: 'FIRE STATION', fact: ['Firefighters work here.', 'Aquí trabajan los bomberos.'], wall: '#e76f51', door: '#3a3a3a' },
-    policeStation: { n: N.policeStation, sign: 'POLICE', fact: ['Police officers work here.', 'Aquí trabajan los policías.'], wall: '#a8c5e6', door: '#1f3a60' }
+    policeStation: { n: N.policeStation, sign: 'POLICE', fact: ['Police officers work here.', 'Aquí trabajan los policías.'], wall: '#a8c5e6', door: '#1f3a60' },
+    restaurant: { n: N.restaurant, sign: 'RESTAURANT', fact: ['People eat dinner here.', 'Aquí la gente cena.'], wall: '#f4a261', door: '#6b2d1f' },
+    bank: { n: N.bank, sign: 'BANK', fact: ['People save money here.', 'Aquí la gente ahorra dinero.'], wall: '#d9d9d9', door: '#1f3a60' },
+    pharmacy: { n: N.pharmacy, sign: 'PHARMACY', fact: ['You can buy medicine here.', 'Aquí puedes comprar medicinas.'], wall: '#d8f3dc', door: '#2d6a4f' },
+    cinema: { n: N.cinema, sign: 'CINEMA', fact: ['You can watch movies here.', 'Aquí puedes ver películas.'], wall: '#9d4edd', door: '#240046' },
+    museum: { n: N.museum, sign: 'MUSEUM', fact: ['You can see old things here.', 'Aquí puedes ver cosas antiguas.'], wall: '#e9e3d5', door: '#6c584c' },
+    clothesStore: { n: N.clothesStore, sign: 'CLOTHES', fact: ['You can buy shirts and shoes here.', 'Aquí puedes comprar camisas y zapatos.'], wall: '#ffc8dd', door: '#c9184a' },
+    gym: { n: N.gym, sign: 'GYM', fact: ['People exercise here.', 'Aquí la gente hace ejercicio.'], wall: '#8ecae6', door: '#023047' },
+    hotel: { n: N.hotel, sign: 'HOTEL', fact: ['Tourists sleep here.', 'Aquí duermen los turistas.'], wall: '#ffe8d6', door: '#9c6644' },
+    petShop: { n: N.petShop, sign: 'PET SHOP', fact: ['You can buy food for your pet here.', 'Aquí puedes comprar comida para tu mascota.'], wall: '#caffbf', door: '#386641' },
+    toyStore: { n: N.toyStore, sign: 'TOYS', fact: ['Children buy toys here.', 'Aquí los niños compran juguetes.'], wall: '#ffd6a5', door: '#e63946' }
+  };
+  // Zona temática de cada edificio (dónde aparecen las palabras de cada tema)
+  const BUILDING_ZONE = {
+    school: 'school', library: 'library', bakery: 'bakery', cafe: 'cafe', restaurant: 'restaurant', supermarket: 'supermarket',
+    hospital: 'hospital', pharmacy: 'pharmacy', gym: 'gym', cinema: 'cinema', clothesStore: 'clothes', petShop: 'petshop',
+    bank: 'bank', postOffice: 'office', hotel: 'office', museum: 'school', fireStation: 'any', policeStation: 'any', toyStore: 'house'
+  };
+
+  /* ---------- Tiempos verbales de cada acción ---------- */
+  // presente simple | pasado | futuro | presente perfecto  (inglés y español)
+  const TENSES = {
+    walk: 'walks|walked|will walk|has walked|camina|caminó|caminará|ha caminado',
+    run: 'runs|ran|will run|has run|corre|corrió|correrá|ha corrido',
+    walkDog: 'walks the dog|walked the dog|will walk the dog|has walked the dog|pasea al perro|paseó al perro|paseará al perro|ha paseado al perro',
+    ride: 'rides a bicycle|rode a bicycle|will ride a bicycle|has ridden a bicycle|monta en bicicleta|montó en bicicleta|montará en bicicleta|ha montado en bicicleta',
+    jump: 'jumps|jumped|will jump|has jumped|salta|saltó|saltará|ha saltado',
+    dance: 'dances|danced|will dance|has danced|baila|bailó|bailará|ha bailado',
+    wave: 'waves|waved|will wave|has waved|saluda|saludó|saludará|ha saludado',
+    read: 'reads a book|read a book|will read a book|has read a book|lee un libro|leyó un libro|leerá un libro|ha leído un libro',
+    eat: 'eats an ice cream|ate an ice cream|will eat an ice cream|has eaten an ice cream|come un helado|comió un helado|comerá un helado|ha comido un helado',
+    drink: 'drinks coffee|drank coffee|will drink coffee|has drunk coffee|toma café|tomó café|tomará café|ha tomado café',
+    sing: 'sings|sang|will sing|has sung|canta|cantó|cantará|ha cantado',
+    sleep: 'sleeps on the bench|slept on the bench|will sleep on the bench|has slept on the bench|duerme en la banca|durmió en la banca|dormirá en la banca|ha dormido en la banca',
+    sit: 'sits on the bench|sat on the bench|will sit on the bench|has sat on the bench|se sienta en la banca|se sentó en la banca|se sentará en la banca|se ha sentado en la banca',
+    phone: 'talks on the phone|talked on the phone|will talk on the phone|has talked on the phone|habla por teléfono|habló por teléfono|hablará por teléfono|ha hablado por teléfono',
+    play: 'plays with a ball|played with a ball|will play with a ball|has played with a ball|juega con una pelota|jugó con una pelota|jugará con una pelota|ha jugado con una pelota',
+    water: 'waters the flowers|watered the flowers|will water the flowers|has watered the flowers|riega las flores|regó las flores|regará las flores|ha regado las flores',
+    paint: 'paints a picture|painted a picture|will paint a picture|has painted a picture|pinta un cuadro|pintó un cuadro|pintará un cuadro|ha pintado un cuadro',
+    kite: 'flies a kite|flew a kite|will fly a kite|has flown a kite|vuela una cometa|voló una cometa|volará una cometa|ha volado una cometa',
+    sweep: 'sweeps the sidewalk|swept the sidewalk|will sweep the sidewalk|has swept the sidewalk|barre la acera|barrió la acera|barrerá la acera|ha barrido la acera',
+    photo: 'takes a photo|took a photo|will take a photo|has taken a photo|toma una foto|tomó una foto|tomará una foto|ha tomado una foto',
+    listen: 'listens to music|listened to music|will listen to music|has listened to music|escucha música|escuchó música|escuchará música|ha escuchado música',
+    stretch: 'stretches|stretched|will stretch|has stretched|se estira|se estiró|se estirará|se ha estirado',
+    fish: 'fishes in the pond|fished in the pond|will fish in the pond|has fished in the pond|pesca en el estanque|pescó en el estanque|pescará en el estanque|ha pescado en el estanque',
+    feed: 'feeds the ducks|fed the ducks|will feed the ducks|has fed the ducks|alimenta a los patos|alimentó a los patos|alimentará a los patos|ha alimentado a los patos',
+    wait: 'waits for the bus|waited for the bus|will wait for the bus|has waited for the bus|espera el autobús|esperó el autobús|esperará el autobús|ha esperado el autobús',
+    carry: 'carries a bag|carried a bag|will carry a bag|has carried a bag|carga una bolsa|cargó una bolsa|cargará una bolsa|ha cargado una bolsa',
+    soccer: 'plays soccer|played soccer|will play soccer|has played soccer|juega fútbol|jugó fútbol|jugará fútbol|ha jugado fútbol',
+    shop: 'buys fruit|bought fruit|will buy fruit|has bought fruit|compra fruta|compró fruta|comprará fruta|ha comprado fruta'
+  };
+  const TENSE_NAMES = {
+    cont: ['Present continuous', 'Presente continuo'], simple: ['Present simple', 'Presente simple'],
+    past: ['Past simple', 'Pasado simple'], fut: ['Future (will)', 'Futuro (will)'], perf: ['Present perfect', 'Presente perfecto']
+  };
+
+  /* ---------- Frases de conversación (lo que dicen los vecinos) ---------- */
+  const PHRASES = [
+    ['Hello! How are you?', '¡Hola! ¿Cómo estás?'], ["I'm fine, thank you. And you?", 'Estoy bien, gracias. ¿Y tú?'],
+    ['Nice to meet you!', '¡Mucho gusto!'], ["What's your name?", '¿Cómo te llamas?'], ['Where are you from?', '¿De dónde eres?'],
+    ['I live in this town.', 'Vivo en este pueblo.'], ['Have a nice day!', '¡Que tengas un buen día!'], ['See you later!', '¡Nos vemos luego!'],
+    ['Can you help me, please?', '¿Me puedes ayudar, por favor?'], ['Excuse me, where is the bank?', 'Disculpa, ¿dónde está el banco?'],
+    ["It's next to the park.", 'Está al lado del parque.'], ['I like your shirt!', '¡Me gusta tu camisa!'], ['What time is it?', '¿Qué hora es?'],
+    ["I'm hungry. Let's eat!", 'Tengo hambre. ¡Vamos a comer!'], ['I love this town.', 'Me encanta este pueblo.'], ["What's the weather like?", '¿Cómo está el clima?'],
+    ['Do you speak English?', '¿Hablas inglés?'], ['Yes, a little.', 'Sí, un poco.'], ["I don't understand.", 'No entiendo.'],
+    ['Can you repeat that, please?', '¿Puedes repetir eso, por favor?'], ['How old are you?', '¿Cuántos años tienes?'], ["I'm twenty years old.", 'Tengo veinte años.'],
+    ['What do you do?', '¿A qué te dedicas?'], ["I'm a teacher.", 'Soy profesor.'], ['Do you like music?', '¿Te gusta la música?'],
+    ['My favorite color is blue.', 'Mi color favorito es el azul.'], ["Let's go to the park!", '¡Vamos al parque!'], ['How much is this?', '¿Cuánto cuesta esto?'],
+    ['It costs five dollars.', 'Cuesta cinco dólares.'], ['Good luck!', '¡Buena suerte!'], ['Congratulations!', '¡Felicitaciones!'],
+    ["I'm sorry, I'm late.", 'Lo siento, llegué tarde.'], ["Don't worry!", '¡No te preocupes!'], ['Are you busy?', '¿Estás ocupado?'],
+    ['I have a dog and a cat.', 'Tengo un perro y un gato.'], ['What are you doing?', '¿Qué estás haciendo?'], ["I'm learning English!", '¡Estoy aprendiendo inglés!'],
+    ['You speak very well!', '¡Hablas muy bien!'], ['Take care!', '¡Cuídate!'], ['Welcome to our neighborhood!', '¡Bienvenido a nuestro barrio!']
+  ];
+
+  const OPPOSITES = [['big', 'small'], ['hot', 'cold'], ['happy', 'sad'], ['fast', 'slow'], ['new', 'old'], ['tall', 'short'], ['good', 'bad'],
+    ['clean', 'dirty'], ['easy', 'difficult'], ['full', 'empty'], ['expensive', 'cheap'], ['rich', 'poor'], ['heavy', 'light'], ['quiet', 'loud'],
+    ['beautiful', 'ugly'], ['wet', 'dry'], ['young', 'old'], ['strong', 'weak'], ['early', 'late'], ['safe', 'dangerous'], ['same', 'different'],
+    ['high', 'low'], ['near', 'far'], ['right', 'wrong'], ['open', 'closed'], ['dark', 'light'], ['long', 'short'], ['sick', 'healthy']];
+
+  /* ---------- La hora y el clima ---------- */
+  const HOURS_EN = ['twelve', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven'];
+  const HOURS_ES = ['doce', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once'];
+  function timeWords(h, m) {
+    const q = Math.round(m / 15) % 4, hh = (q === 3 || Math.round(m / 15) === 4 ? h + 1 : h) % 24;
+    const en12 = HOURS_EN[hh % 12], es12 = HOURS_ES[hh % 12];
+    const esArt = hh % 12 === 1 ? 'Es la' : 'Son las';
+    const part = hh < 12 ? ['in the morning', 'de la mañana'] : hh < 18 ? ['in the afternoon', 'de la tarde'] : ['at night', 'de la noche'];
+    if ((Math.round(m / 15) === 4 || q === 0) && hh === 12) return { en: "It's noon.", es: 'Es mediodía.' };
+    if ((Math.round(m / 15) === 4 || q === 0) && hh === 0) return { en: "It's midnight.", es: 'Es medianoche.' };
+    if (Math.round(m / 15) === 4 || q === 0) return { en: `It's ${en12} o'clock ${part[0]}.`, es: `${esArt} ${es12} en punto ${part[1]}.` };
+    if (q === 1) return { en: `It's a quarter past ${en12}.`, es: `${esArt} ${es12} y cuarto.` };
+    if (q === 2) return { en: `It's half past ${en12}.`, es: `${esArt} ${es12} y media.` };
+    return { en: `It's a quarter to ${en12}.`, es: `${esArt} ${es12} menos cuarto.` };
+  }
+  function greeting(h) {
+    if (h >= 5 && h < 12) return ['Good morning!', '¡Buenos días!', 'morning', 'mañana'];
+    if (h >= 12 && h < 18) return ['Good afternoon!', '¡Buenas tardes!', 'afternoon', 'tarde'];
+    if (h >= 18 && h < 21) return ['Good evening!', '¡Buenas noches!', 'evening', 'noche'];
+    return ['Good night!', '¡Buenas noches!', 'night', 'noche'];
+  }
+  const WEATHER = {
+    sunny: { en: "It's sunny. Wear sunglasses!", es: 'Hace sol. ¡Usa gafas de sol!', word: 'sunny', wordEs: 'soleado', icon: '☀️' },
+    cloudy: { en: "It's cloudy today.", es: 'Hoy está nublado.', word: 'cloudy', wordEs: 'nublado', icon: '☁️' },
+    rainy: { en: "It's raining. Take an umbrella!", es: 'Está lloviendo. ¡Lleva un paraguas!', word: 'raining', wordEs: 'lloviendo', icon: '🌧️' },
+    windy: { en: "It's windy. Hold your hat!", es: 'Hace viento. ¡Sujeta tu sombrero!', word: 'windy', wordEs: 'con viento', icon: '💨' }
   };
 
   /* ---------- Adjetivos ---------- */
@@ -207,7 +335,9 @@ const Ingles = (() => {
     fish: { verb: ['fish', 'fishing', 'fished', 'pescar'], en: 'fishing in the pond', es: 'está pescando en el estanque', pose: 'de pie', advs: ['patiently', 'quietly'], obj: 'fishingRod', spot: 'pond' },
     feed: { verb: ['feed', 'feeding', 'fed', 'alimentar'], en: 'feeding the ducks', es: 'está alimentando a los patos', pose: 'de pie', advs: ['gently', 'happily'], spot: 'pond' },
     wait: { verb: ['wait', 'waiting', 'waited', 'esperar'], en: 'waiting for the bus', es: 'está esperando el autobús', pose: 'manos en cintura', advs: ['patiently'], spot: 'busStop' },
-    carry: { verb: ['carry', 'carrying', 'carried', 'cargar'], en: 'carrying a bag', es: 'está cargando una bolsa', move: 1, advs: ['carefully', 'slowly'], obj: 'bag' }
+    carry: { verb: ['carry', 'carrying', 'carried', 'cargar'], en: 'carrying a bag', es: 'está cargando una bolsa', move: 1, advs: ['carefully', 'slowly'], obj: 'bag' },
+    soccer: { verb: ['play', 'playing', 'played', 'jugar'], en: 'playing soccer', es: 'está jugando fútbol', pose: 'caminando', advs: ['energetically', 'well'] },
+    shop: { verb: ['buy', 'buying', 'bought', 'comprar'], en: 'buying fruit', es: 'está comprando fruta', pose: 'de pie', advs: ['happily', 'carefully'], obj: 'bag' }
   };
 
   const NAMES = ['Alex', 'Sam', 'Jordan', 'Taylor', 'Casey', 'Riley', 'Jamie', 'Morgan', 'Chris', 'Robin', 'Kim', 'Lee',
@@ -327,6 +457,20 @@ const Ingles = (() => {
       const adv = ADV[advKey];
       return { cat: 'adv', word: adv.en, wordEs: adv.es, en: `${name} is ${act.en} ${adv.en}.`, es: `${name} ${act.es} ${adv.es}.`, icon: '⚡', extra: adv.from };
     },
+    tense(name, key, act, tense) {
+      const t = TENSES[key].split('|');
+      const [base, ing, past] = act.verb;
+      const tn = TENSE_NAMES[tense];
+      const forms = {
+        cont: [`${name} is ${act.en} now.`, `${name} ${act.es} ahora.`, ing],
+        simple: [`${name} ${t[0]} every day.`, `${name} ${t[4]} todos los días.`, t[0].split(' ')[0]],
+        past: [`Yesterday, ${name} ${t[1]}.`, `Ayer, ${name} ${t[5]}.`, t[1].split(' ')[0]],
+        fut: [`Tomorrow, ${name} ${t[2]}.`, `Mañana, ${name} ${t[6]}.`, 'will ' + t[2].split(' ')[1]],
+        perf: [`${name} ${t[3]} today.`, `${name} ${t[7]} hoy.`, t[3].split(' ').slice(0, 2).join(' ')]
+      }[tense];
+      return { cat: 'verb', word: forms[2], wordEs: act.verb[3], en: forms[0], es: forms[1], icon: '⏳', tense: tn,
+        extra: `${tn[0]} · ${tn[1]} — to ${base} · ${past} · ${ing}` };
+    },
     free(cat, word, wordEs, en, es, icon, extra) {
       return { cat, word, wordEs, en, es, icon, extra };
     }
@@ -340,5 +484,5 @@ const Ingles = (() => {
     adv: { name: 'Adverbs', es: 'Adverbios', color: '#c0392b' }
   };
 
-  return { N, BUILDINGS, COLORS, ADJ, PREP, ADV, ACTIONS, NAMES, NUMBERS, L, CATS, colorName, a, el, un, elN, unN, cap, adjEs, prepEs };
+  return { TENSES, TENSE_NAMES, PHRASES, OPPOSITES, timeWords, greeting, WEATHER, BUILDING_ZONE, N, BUILDINGS, COLORS, ADJ, PREP, ADV, ACTIONS, NAMES, NUMBERS, L, CATS, colorName, a, el, un, elN, unN, cap, adjEs, prepEs };
 })();
