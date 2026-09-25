@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fonética del Inglés Americano</title>
+<meta name="description" content="Aprende los sonidos del Alfabeto Fonético Internacional (AFI/IPA) del inglés americano, explicados para hispanohablantes: tabla interactiva, audio, pares mínimos y juegos.">
+<meta name="theme-color" content="#3b5bdb">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%233b5bdb'/><text x='50' y='72' font-size='64' text-anchor='middle' fill='white' font-family='serif'>ə</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header class="top">
+  <div class="marca">
+    <span class="logo">/ə/</span>
+    <div>
+      <h1>Fonética del Inglés Americano</h1>
+      <p class="sub">Los sonidos del AFI explicados en español</p>
+    </div>
+  </div>
+  <div class="ajustes">
+    <span class="racha" id="rachaTop" title="Racha de respuestas correctas">🔥 0</span>
+    <button class="icono" id="btnAjustes" aria-label="Ajustes de voz">⚙️</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs" aria-label="Secciones">
+  <button data-tab="aprende" class="on">🧭 Aprende</button>
+  <button data-tab="tabla">🔤 Tabla AFI</button>
+  <button data-tab="vocales">👄 Vocales</button>
+  <button data-tab="consonantes">🦷 Consonantes</button>
+  <button data-tab="especiales">🇺🇸 Acento americano</button>
+  <button data-tab="practica">🎮 Práctica</button>
+  <button data-tab="diccionario">🔎 Diccionario</button>
+  <button data-tab="progreso">📈 Progreso</button>
+</nav>
+
+<div id="avisoVoz" class="aviso oculto"></div>
+
+<main id="vista"></main>
+
+<div id="modal" class="modal oculto" role="dialog" aria-modal="true">
+  <div class="modal-caja">
+    <button class="cerrar" id="cerrarModal" aria-label="Cerrar">✕</button>
+    <div id="modalCuerpo"></div>
+  </div>
+</div>
+
+<footer class="pie">
+  Hecho para hispanohablantes que aprenden inglés · Audio generado por la voz en inglés de tu dispositivo ·
+  <a href="https://github.com/andressantage/generador-arboles/tree/main/fonetica">Código</a>
+</footer>
+
+<script src="datos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
