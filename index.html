@@ -50,6 +50,13 @@
   }
   h1 { font-size: 18px; font-weight: 650; }
   h1 small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 2px; }
+  .nav { display: flex; flex-wrap: wrap; gap: 6px; }
+  .nav a {
+    font-size: 12px; text-decoration: none; color: var(--text);
+    border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px;
+  }
+  .nav a:hover { border-color: var(--accent); }
+  .nav a.active { background: var(--accent); color: var(--accent-text); border-color: transparent; }
   fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
   legend { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 0 4px; }
   label { display: flex; flex-direction: column; gap: 4px; }
@@ -97,6 +104,13 @@
 <body>
 <aside>
   <h1>Generador de árboles <small>Fractal recursivo · Espacio o Enter = árbol nuevo</small></h1>
+  <nav class="nav">
+    <a href="index.html" class="active">Árboles</a>
+    <a href="rostros.html">Rostros</a>
+    <a href="carros.html">Carros</a>
+    <a href="casas.html">Casas</a>
+    <a href="antes_arboles.html">Versión anterior</a>
+  </nav>
 
   <button class="primary" id="btnNew">🌱 Generar otro árbol</button>
 
