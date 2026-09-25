@@ -1,0 +1,2062 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>English Town</title>
+<meta name="description" content="Un pueblo generado al azar para aprender inglés: vocabulario, verbos, preposiciones, adjetivos y adverbios con un profesor que señala y pronuncia.">
+<style>
+  :root {
+    --panel: rgba(255, 255, 255, 0.94);
+    --text: #1f2421;
+    --muted: #5d655f;
+    --border: rgba(0, 0, 0, 0.12);
+    --accent: #2f7d4f;
+    --shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --panel: rgba(30, 35, 32, 0.94); --text: #e8ebe9; --muted: #a7b0aa; --border: rgba(255, 255, 255, 0.14); --accent: #4caf78; }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; overflow: hidden; background: #7cb461; }
+  body { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; outline: none; }
+  .card {
+    position: absolute; background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow); backdrop-filter: blur(6px);
+  }
+  #panel { left: 12px; top: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-width: 260px; }
+  #panel h1 { font-size: 16px; font-weight: 700; cursor: pointer; }
+  #panel h1 small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
+  #btnRandom {
+    font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 9px 12px; cursor: pointer;
+    background: var(--accent); color: #fff;
+  }
+  #btnRandom:hover { filter: brightness(1.07); }
+  #stats { font-size: 13px; color: var(--muted); cursor: pointer; display: flex; gap: 10px; flex-wrap: wrap; }
+  #stats b { color: var(--text); }
+  #mission { right: 12px; top: 12px; padding: 10px 14px; width: min(330px, calc(100vw - 24px)); cursor: pointer; user-select: none; }
+  #mission .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); display: flex; justify-content: space-between; }
+  #mission .en { font-size: 17px; font-weight: 700; margin-top: 2px; }
+  #mission .es { color: var(--muted); font-size: 13px; }
+  #mission.done { outline: 3px solid #f1c40f; }
+  #lesson {
+    left: 50%; bottom: 16px; transform: translateX(-50%); padding: 12px 16px 12px; width: min(560px, calc(100vw - 24px));
+    cursor: pointer; transition: opacity .25s; user-select: none;
+  }
+  #lesson.hidden { opacity: 0; pointer-events: none; }
+  #lesson .top { display: flex; align-items: center; gap: 10px; }
+  #lesson .chip { font-size: 11px; font-weight: 700; color: #fff; padding: 3px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; }
+  #lesson .word { font-size: 24px; font-weight: 800; }
+  #lesson .wordEs { color: var(--muted); font-size: 15px; }
+  #lesson .spk { margin-left: auto; font-size: 20px; }
+  #lesson .en { font-size: 18px; margin-top: 6px; }
+  #lesson .en mark { background: none; color: inherit; border-bottom: 3px solid var(--mark, #f1c40f); font-weight: 700; }
+  #lesson .es { color: var(--muted); margin-top: 2px; }
+  #lesson .extra { font-size: 12px; color: var(--muted); margin-top: 4px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  #where {
+    position: absolute; left: 12px; bottom: 16px; max-width: min(360px, calc(100vw - 250px)); font-size: 13px; color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,.8); cursor: pointer;
+  }
+  #where b { font-size: 14px; }
+  .overlay {
+    position: absolute; inset: 0; background: rgba(10, 16, 14, 0.55); display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .overlay.hidden { display: none; }
+  .overlay .box {
+    background: var(--panel); color: var(--text); border-radius: 16px; box-shadow: var(--shadow); padding: 20px 22px;
+    width: min(640px, 100%); max-height: calc(100vh - 32px); overflow: auto;
+  }
+  .box h2 { font-size: 20px; margin-bottom: 8px; }
+  .box h3 { font-size: 14px; margin: 14px 0 6px; }
+  .box p, .box li { color: var(--muted); }
+  .box ul { padding-left: 18px; display: grid; gap: 3px; }
+  .box kbd { background: rgba(127,127,127,.18); border-radius: 5px; padding: 1px 6px; font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--text); }
+  .cats { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .cats span { font-size: 12px; color: #fff; padding: 2px 9px; border-radius: 999px; font-weight: 600; }
+  .start { margin-top: 14px; font-weight: 700; color: var(--accent); text-align: center; }
+  #nbList { display: grid; gap: 4px; }
+  #nbList .it { display: flex; gap: 8px; align-items: baseline; padding: 5px 8px; border-radius: 8px; cursor: pointer; }
+  #nbList .it:hover { background: rgba(127,127,127,.12); }
+  #nbList .it b { min-width: 110px; }
+  #nbList .it span { color: var(--muted); font-size: 13px; }
+  #toast {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%); background: rgba(20,24,22,.88); color: #fff;
+    padding: 6px 12px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  @media (max-width: 700px) {
+    #panel { max-width: 180px; padding: 8px 10px; gap: 6px; }
+    #panel h1 small { display: none; }
+    #btnRandom { padding: 7px 10px; font-size: 13px; }
+    #lesson .top { flex-wrap: wrap; gap: 6px; }
+    #lesson .chip { font-size: 10px; }
+    #mission { top: auto; bottom: 150px; right: 12px; left: 12px; width: auto; padding: 8px 12px; }
+    #mission .en { font-size: 15px; }
+    #lesson { bottom: 10px; padding: 10px 12px; }
+    #lesson .word { font-size: 20px; }
+    #lesson .en { font-size: 16px; }
+    #where { display: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="0" aria-label="Pueblo para aprender inglés. Usa las flechas para moverte."></canvas>
+
+<div id="panel" class="card">
+  <h1 id="title">🌎 English Town <small>Aprende inglés explorando · H = ayuda</small></h1>
+  <button id="btnRandom">🎲 Aleatorizar mundo</button>
+  <div id="stats" title="Abrir el cuaderno de palabras (V)"></div>
+</div>
+
+<div id="mission" class="card" title="Toca para escuchar · mantén presionado para otra misión">
+  <div class="lbl"><span>🎯 Mission</span><span id="mSkip">N = otra</span></div>
+  <div class="en" id="mEn"></div>
+  <div class="es" id="mEs"></div>
+</div>
+
+<div id="lesson" class="card hidden" title="Toca para escuchar otra vez">
+  <div class="top">
+    <span class="chip" id="lChip"></span>
+    <span class="word" id="lWord"></span>
+    <span class="wordEs" id="lWordEs"></span>
+    <span class="spk">🔊</span>
+  </div>
+  <div class="en" id="lEn"></div>
+  <div class="es" id="lEs"></div>
+  <div class="extra" id="lExtra"></div>
+</div>
+
+<div id="where" title="Toca para escuchar"></div>
+
+<div id="help" class="overlay">
+  <div class="box">
+    <h2>🌎 English Town — aprende inglés explorando</h2>
+    <p>Recorre el pueblo con tu personaje. Tu <b>profesor 🎓</b> te acompaña, <b>señala</b> las cosas que tienes cerca y te dice cómo se llaman en inglés, en voz alta. Aprende:</p>
+    <div class="cats" id="helpCats"></div>
+    <h3>Cómo moverte</h3>
+    <ul>
+      <li><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> o <kbd>WASD</kbd>: moverte por todo el pueblo (calles, aceras, parque, detrás de las casas…). <kbd>Shift</kbd>: correr.</li>
+      <li><b>Clic o toque</b> en el suelo: caminar hasta ahí (mantén presionado para seguir el dedo).</li>
+      <li><b>Clic o toque</b> sobre cualquier cosa o persona: el profesor te explica qué es.</li>
+      <li><kbd>+</kbd> <kbd>−</kbd> o rueda del ratón: acercar o alejar.</li>
+    </ul>
+    <h3>Cómo aprender</h3>
+    <ul>
+      <li><kbd>E</kbd>: preguntar al profesor por lo más cercano (repite para ver otras lecciones del mismo objeto).</li>
+      <li><kbd>R</kbd> o <kbd>Espacio</kbd>, o toca la tarjeta: escuchar otra vez. Toca la palabra grande para oírla sola.</li>
+      <li><kbd>L</kbd>: voz lenta / normal · <kbd>T</kbd>: el profesor enseña solo (sí / no).</li>
+      <li>🎯 <b>Misiones</b>: busca lo que te piden (ej. «Find the red car!»). <kbd>N</kbd> o mantener presionada la misión: otra misión.</li>
+      <li><kbd>V</kbd> o toca ⭐📘: tu cuaderno con todas las palabras aprendidas. Se guarda en este navegador.</li>
+      <li>🎲 <b>Aleatorizar mundo</b>: un pueblo nuevo con otras casas, personas, acciones y colores.</li>
+    </ul>
+    <div class="start">Toca o presiona cualquier tecla para empezar 🔊</div>
+  </div>
+</div>
+
+<div id="notebook" class="overlay hidden">
+  <div class="box">
+    <h2>📘 My notebook — mi cuaderno</h2>
+    <p id="nbSummary"></p>
+    <div id="nbList"></div>
+    <div class="start">Toca fuera o presiona V para cerrar</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="comun.js"></script>
+<script src="rostro.js"></script>
+<script src="carro.js"></script>
+<script src="casa.js"></script>
+<script src="humano.js"></script>
+<script src="ingles_datos.js"></script>
+<script>
+'use strict';
+
+const $ = id => document.getElementById(id);
+const canvas = $('c');
+const ctx = canvas.getContext('2d');
+const { N, L, BUILDINGS, COLORS, ADJ, ACTIONS, CATS, colorName, elN, cap, adjEs } = Ingles;
+
+/* =========================================================
+   Trazado del pueblo (unidades del mundo)
+   ========================================================= */
+const ROWS = 3, ROW_H = 1350, LOT_W = 1150, VS_W = 300, START_X = 500;
+const ROW_ITEMS = ['L', 'L', 'V', 'L', 'L', 'V', 'L'];
+const SW_A = [70, 120], ROAD = [120, 380], SW_B = [380, 432], LANE = [238, 352];
+const HUMAN_H = 100, CAR_SCALE = 0.26, VIEW_H = 1250;
+const TOP_Y = -240, SKY_Y = -260;
+const lotsX = [], vstreets = [];
+{
+  let x = START_X;
+  ROW_ITEMS.forEach(it => {
+    if (it === 'L') { lotsX.push({ left: x, cx: x + LOT_W / 2, right: x + LOT_W }); x += LOT_W; }
+    else { vstreets.push({ x0: x, x1: x + VS_W }); x += VS_W; }
+  });
+  var WORLD_W = x + START_X;
+}
+const BOTTOM_Y = (ROWS - 1) * ROW_H + 980;
+const rowBase = r => r * ROW_H;
+const SKIES = {
+  'día': { top: '#5fa8d3', bottom: '#cfe8f5', grass: '#7cb461', hill: '#6fa860', sidewalk: '#d3cdc2', road: '#56575c' },
+  'atardecer': { top: '#6a4c93', bottom: '#f6a55c', grass: '#6b8f4e', hill: '#5d7d45', sidewalk: '#c9b8a6', road: '#4f4a52' },
+  'noche': { top: '#0b1320', bottom: '#243b55', grass: '#3f6b45', hill: '#1b3322', sidewalk: '#a19a90', road: '#3a3b40' }
+};
+
+/* =========================================================
+   Estado
+   ========================================================= */
+let W = null;          // mundo generado
+let player = null, guide = null;
+const cam = { x: 900, y: 200, zoom: 1 };
+const keys = {};
+let lesson = null, lastLessonEnd = -99, lastSpoken = '';
+let mission = null, missionIdx = 0;
+let particles = [];
+let started = false, now = 0;
+const settings = { slow: false, auto: true };
+let progress = loadProgress();
+
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem('englishTown.v1')) || { words: {}, stars: 0 }; }
+  catch { return { words: {}, stars: 0 }; }
+}
+function saveProgress() {
+  try { localStorage.setItem('englishTown.v1', JSON.stringify(progress)); } catch { /* sin almacenamiento */ }
+}
+
+/* =========================================================
+   Voz (síntesis del navegador)
+   ========================================================= */
+const Voice = {
+  voice: null,
+  ok: 'speechSynthesis' in window,
+  pick() {
+    if (!this.ok) return;
+    const vs = speechSynthesis.getVoices();
+    this.voice = vs.find(v => /en[-_]US/i.test(v.lang) && /Google|Samantha|Aria|Jenny|Natural/i.test(v.name))
+      || vs.find(v => /en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null;
+  },
+  speak(text, rate) {
+    if (!this.ok || !started) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    if (this.voice) u.voice = this.voice;
+    u.rate = rate || (settings.slow ? 0.62 : 0.92);
+    speechSynthesis.speak(u);
+    lastSpoken = text;
+  }
+};
+if (Voice.ok) { Voice.pick(); speechSynthesis.onvoiceschanged = () => Voice.pick(); }
+
+/* =========================================================
+   Ayudas de dibujo
+   ========================================================= */
+const noBg = parts => { const g = parts.geo; const out = parts.filter(q => !q.bg); out.geo = g; return out; };
+
+function makeHuman(seed, poses, extra = {}) {
+  const base = { ...Humano.config.presets['Aleatorio'], randomColors: true, variation: 0.5, smile: 0.5, ...extra };
+  const h = { poses: {} };
+  h.walkP = { ...base, pose: 'caminando', phase: Math.random() * 6 };
+  h.walk = noBg(Humano.build(h.walkP, Gen.makeRand(seed)));
+  poses.forEach(pose => {
+    const p = { ...base, pose, phase: 0 };
+    h.poses[pose] = { p, parts: noBg(Humano.build(p, Gen.makeRand(seed))) };
+  });
+  h.geo = h.walk.geo;
+  return h;
+}
+
+function drawHuman(g, h, x, y, opts = {}) {
+  const moving = opts.moving;
+  const parts = moving ? h.walk : (h.poses[opts.pose] || Object.values(h.poses)[0]).parts;
+  const s = HUMAN_H / 820;
+  const bob = moving ? Math.abs(Math.sin(h.walkP.phase)) * 3 : 0;
+  g.save();
+  g.translate(x, y - bob - (opts.lift || 0));
+  if (opts.rot) g.rotate(opts.rot);
+  if (opts.sway) g.rotate(opts.sway);
+  g.scale(s, s);
+  g.translate(-300, -960);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  parts.forEach(q => q(g));
+  g.restore();
+}
+
+function rrect(g, x, y, w, h, r) {
+  g.beginPath();
+  Gen.roundedPoly(g, [[x, y], [x + w, y], [x + w, y + h], [x, y + h]], Math.min(r, w / 2, h / 2));
+}
+
+function makeTreeSprite(R, len, leafColors) {
+  const depth = 8;
+  const tr = Casa.fractalTree(R, 0, 0, len, depth);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const ext = (x, y, r) => { minX = Math.min(minX, x - r); maxX = Math.max(maxX, x + r); minY = Math.min(minY, y - r); maxY = Math.max(maxY, y + r); };
+  tr.levels.forEach(seg => { for (let j = 0; j < seg.length; j += 2) ext(seg[j], seg[j + 1], 10); });
+  for (let j = 0; j < tr.leaves.length; j += 4) ext(tr.leaves[j], tr.leaves[j + 1], tr.leaves[j + 2]);
+  const res = 1.2;
+  const c = document.createElement('canvas');
+  c.width = Math.ceil((maxX - minX) * res);
+  c.height = Math.ceil((maxY - minY) * res);
+  const g = c.getContext('2d');
+  g.scale(res, res);
+  g.translate(-minX, -minY);
+  g.lineCap = 'round';
+  tr.levels.forEach((seg, i) => {
+    g.strokeStyle = Gen.mix('#4a3222', '#6b5a3a', i / depth);
+    g.lineWidth = Math.max(1, 16 * Math.pow(0.68, i));
+    g.beginPath();
+    for (let j = 0; j < seg.length; j += 4) { g.moveTo(seg[j], seg[j + 1]); g.lineTo(seg[j + 2], seg[j + 3]); }
+    g.stroke();
+  });
+  leafColors.forEach((col, k) => {
+    g.fillStyle = col;
+    g.beginPath();
+    for (let j = 0; j < tr.leaves.length; j += 4) {
+      if (tr.leaves[j + 3] !== k) continue;
+      g.moveTo(tr.leaves[j] + tr.leaves[j + 2], tr.leaves[j + 1]);
+      g.arc(tr.leaves[j], tr.leaves[j + 1], tr.leaves[j + 2], 0, Math.PI * 2);
+    }
+    g.fill();
+  });
+  return { img: c, ox: minX, oy: minY, w: maxX - minX, h: maxY - minY, height: -minY };
+}
+
+/* ----- Objetos pequeños ----- */
+const Draw = {
+  bench(g, x, y) {
+    g.fillStyle = '#6b4a2b';
+    g.fillRect(x - 58, y - 64, 116, 10);
+    g.fillRect(x - 58, y - 50, 116, 8);
+    g.fillStyle = '#8a6239';
+    g.fillRect(x - 62, y - 32, 124, 10);
+    g.fillStyle = '#3a3f45';
+    [-50, 46].forEach(dx => { g.fillRect(x + dx, y - 64, 5, 64); g.fillRect(x + dx - 2, y - 24, 8, 24); });
+  },
+  table(g, x, y, color) {
+    g.fillStyle = '#3a3f45';
+    g.fillRect(x - 2, y - 120, 4, 90);
+    g.fillStyle = color;
+    g.beginPath(); g.moveTo(x - 60, y - 105); g.quadraticCurveTo(x, y - 150, x + 60, y - 105); g.closePath(); g.fill();
+    g.fillStyle = Gen.rgba('#ffffff', 0.5);
+    g.fillRect(x - 60, y - 108, 120, 4);
+    g.fillStyle = '#f5f5f5';
+    g.beginPath(); g.ellipse(x, y - 36, 34, 7, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#3a3f45';
+    g.fillRect(x - 2, y - 34, 4, 34);
+    g.fillRect(x - 16, y - 3, 32, 4);
+  },
+  mailbox(g, x, y, n) {
+    g.fillStyle = '#5a4632';
+    g.fillRect(x - 3, y - 46, 6, 46);
+    g.fillStyle = '#2f5d8a';
+    rrect(g, x - 18, y - 68, 36, 24, 6); g.fill();
+    g.fillStyle = '#ffffff';
+    g.font = 'bold 17px system-ui, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(String(n), x, y - 55);
+    g.fillStyle = '#d7263d';
+    g.fillRect(x + 16, y - 72, 3, 16);
+  },
+  trashCan(g, x, y) {
+    g.fillStyle = '#4f6d5a';
+    rrect(g, x - 18, y - 46, 36, 46, 5); g.fill();
+    g.fillStyle = '#3e5646';
+    g.fillRect(x - 21, y - 50, 42, 8);
+    g.strokeStyle = Gen.rgba('#000000', 0.2); g.lineWidth = 2;
+    g.beginPath(); [-8, 0, 8].forEach(dx => { g.moveTo(x + dx, y - 38); g.lineTo(x + dx, y - 6); }); g.stroke();
+  },
+  bicycle(g, x, y, color, t = 0) {
+    g.strokeStyle = '#222'; g.lineWidth = 3;
+    [[-26, 0], [26, 0]].forEach(([dx]) => {
+      g.beginPath(); g.arc(x + dx, y - 17, 16, 0, Math.PI * 2); g.stroke();
+      g.beginPath(); g.moveTo(x + dx, y - 17); g.lineTo(x + dx + Math.cos(t) * 15, y - 17 + Math.sin(t) * 15); g.stroke();
+    });
+    g.strokeStyle = color; g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(x - 26, y - 17); g.lineTo(x - 4, y - 17); g.lineTo(x + 12, y - 42); g.lineTo(x - 10, y - 42); g.closePath();
+    g.moveTo(x - 4, y - 17); g.lineTo(x - 12, y - 48);
+    g.moveTo(x + 12, y - 42); g.lineTo(x + 26, y - 17);
+    g.moveTo(x + 12, y - 42); g.lineTo(x + 10, y - 52);
+    g.stroke();
+    g.fillStyle = '#222'; g.fillRect(x - 19, y - 52, 14, 5); g.fillRect(x + 4, y - 55, 14, 4);
+  },
+  dog(g, x, y, color, t, mode, dir = 1) {
+    const legs = mode === 'walk' ? Math.sin(t * 12) * 5 : 0;
+    g.save(); g.translate(x, y); g.scale(dir, 1);
+    g.fillStyle = color;
+    if (mode === 'sleep') {
+      g.beginPath(); g.ellipse(0, -12, 26, 12, 0, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(22, -10, 11, 9, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = Gen.shade(color, -0.3); g.beginPath(); g.ellipse(20, -16, 5, 8, -0.4, 0, Math.PI * 2); g.fill();
+    } else {
+      g.fillRect(-18 + legs, -16, 6, 16); g.fillRect(12 - legs, -16, 6, 16);
+      g.fillRect(-10 - legs, -16, 6, 16); g.fillRect(4 + legs, -16, 6, 16);
+      g.beginPath(); g.ellipse(0, -24, 24, 12, 0, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(24, -36, 12, 10, 0, 0, Math.PI * 2); g.fill();
+      g.fillRect(28, -36, 12, 7);
+      g.fillStyle = Gen.shade(color, -0.3);
+      g.beginPath(); g.ellipse(19, -41, 5, 9, -0.5, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = color; g.lineWidth = 5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-22, -28); g.lineTo(-32, -40 + Math.sin(t * 14) * 5); g.stroke();
+      g.fillStyle = '#111'; g.beginPath(); g.arc(28, -39, 2, 0, Math.PI * 2); g.arc(40, -33, 2.5, 0, Math.PI * 2); g.fill();
+    }
+    g.restore();
+  },
+  doghouse(g, x, y, color) {
+    g.fillStyle = color;
+    g.fillRect(x - 38, y - 52, 76, 52);
+    g.fillStyle = Gen.shade(color, -0.35);
+    g.beginPath(); g.moveTo(x - 46, y - 50); g.lineTo(x, y - 86); g.lineTo(x + 46, y - 50); g.closePath(); g.fill();
+    g.fillStyle = '#2b2118';
+    g.beginPath(); g.moveTo(x - 16, y); g.lineTo(x - 16, y - 26); g.arc(x, y - 26, 16, Math.PI, 0); g.lineTo(x + 16, y); g.fill();
+  },
+  cat(g, x, y, color, t, sleep) {
+    g.fillStyle = color;
+    if (sleep) {
+      g.beginPath(); g.ellipse(x, y - 10, 20, 10, 0, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(x + 16, y - 12, 9, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.moveTo(x + 10, y - 18); g.lineTo(x + 12, y - 28); g.lineTo(x + 17, y - 20); g.fill();
+      g.beginPath(); g.moveTo(x + 18, y - 20); g.lineTo(x + 23, y - 28); g.lineTo(x + 24, y - 17); g.fill();
+      g.strokeStyle = color; g.lineWidth = 5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(x - 18, y - 8); g.quadraticCurveTo(x - 30, y - 2, x - 22, y + 2); g.stroke();
+    } else {
+      g.beginPath(); g.ellipse(x, y - 16, 12, 16, 0, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(x, y - 36, 10, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.moveTo(x - 9, y - 40); g.lineTo(x - 8, y - 52); g.lineTo(x - 2, y - 44); g.fill();
+      g.beginPath(); g.moveTo(x + 9, y - 40); g.lineTo(x + 8, y - 52); g.lineTo(x + 2, y - 44); g.fill();
+      g.strokeStyle = color; g.lineWidth = 5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(x + 10, y - 6); g.quadraticCurveTo(x + 28, y - 10 + Math.sin(t * 3) * 4, x + 24, y - 30); g.stroke();
+      g.fillStyle = '#9be15d'; g.beginPath(); g.arc(x - 4, y - 37, 2, 0, Math.PI * 2); g.arc(x + 4, y - 37, 2, 0, Math.PI * 2); g.fill();
+    }
+  },
+  bird(g, x, y, color, t, flying) {
+    g.fillStyle = color;
+    g.beginPath(); g.ellipse(x, y, 10, 7, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(x + 8, y - 5, 5, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#f39c12'; g.beginPath(); g.moveTo(x + 12, y - 6); g.lineTo(x + 18, y - 4); g.lineTo(x + 12, y - 2); g.fill();
+    g.fillStyle = Gen.shade(color, -0.25);
+    const wing = flying ? Math.sin(t * 16) * 10 : 2;
+    g.beginPath(); g.moveTo(x - 4, y - 2); g.lineTo(x - 12, y - 4 - wing); g.lineTo(x + 4, y - 2); g.fill();
+  },
+  duck(g, x, y, t, dir = 1) {
+    g.save(); g.translate(x, y + Math.sin(t * 2) * 1.5); g.scale(dir, 1);
+    g.fillStyle = '#f5f0e1'; g.beginPath(); g.ellipse(0, -8, 17, 9, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#2e7d4f'; g.beginPath(); g.arc(13, -20, 8, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#f39c12'; g.beginPath(); g.moveTo(19, -21); g.lineTo(28, -18); g.lineTo(19, -16); g.fill();
+    g.fillStyle = '#111'; g.beginPath(); g.arc(15, -22, 1.6, 0, Math.PI * 2); g.fill();
+    g.restore();
+  },
+  fountain(g, x, y, t) {
+    g.fillStyle = '#b8b2a7';
+    g.beginPath(); g.ellipse(x, y - 14, 80, 24, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#6fb7e0';
+    g.beginPath(); g.ellipse(x, y - 18, 68, 17, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#a39d92'; g.fillRect(x - 8, y - 80, 16, 64);
+    g.fillStyle = '#b8b2a7'; g.beginPath(); g.ellipse(x, y - 80, 30, 8, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = Gen.rgba('#bfe6ff', 0.9); g.lineWidth = 3;
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * Math.PI * 2 + t;
+      const dx = Math.cos(a) * 50;
+      g.beginPath(); g.moveTo(x, y - 84); g.quadraticCurveTo(x + dx * 0.5, y - 130, x + dx, y - 22); g.stroke();
+    }
+  },
+  pondGround(g, p, t) {
+    g.fillStyle = '#8fb58a';
+    g.beginPath(); g.ellipse(p.x, p.y, p.rx + 18, p.ry + 12, 0, 0, Math.PI * 2); g.fill();
+    const grd = g.createLinearGradient(0, p.y - p.ry, 0, p.y + p.ry);
+    grd.addColorStop(0, '#5aa7d6'); grd.addColorStop(1, '#3b7fb0');
+    g.fillStyle = grd;
+    g.beginPath(); g.ellipse(p.x, p.y, p.rx, p.ry, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = Gen.rgba('#ffffff', 0.35); g.lineWidth = 2;
+    for (let k = 0; k < 4; k++) {
+      const rr = ((t * 20 + k * 40) % 160);
+      g.beginPath(); g.ellipse(p.x - 60 + k * 40, p.y + 10, rr * 0.5, rr * 0.18, 0, 0, Math.PI * 2); g.stroke();
+    }
+  },
+  slide(g, x, y) {
+    g.strokeStyle = '#d35400'; g.lineWidth = 6;
+    g.beginPath(); g.moveTo(x - 50, y); g.lineTo(x - 50, y - 120); g.moveTo(x - 20, y); g.lineTo(x - 20, y - 120); g.stroke();
+    g.lineWidth = 3;
+    g.beginPath(); for (let k = 1; k < 6; k++) { g.moveTo(x - 50, y - k * 20); g.lineTo(x - 20, y - k * 20); } g.stroke();
+    g.fillStyle = '#f1c40f';
+    g.beginPath(); g.moveTo(x - 20, y - 120); g.quadraticCurveTo(x + 30, y - 110, x + 70, y - 6); g.lineTo(x + 50, y - 6);
+    g.quadraticCurveTo(x + 15, y - 95, x - 20, y - 104); g.fill();
+    g.fillStyle = '#d35400'; g.fillRect(x - 54, y - 124, 38, 8);
+  },
+  swing(g, x, y, t) {
+    g.strokeStyle = '#34495e'; g.lineWidth = 6;
+    g.beginPath(); g.moveTo(x - 60, y); g.lineTo(x - 40, y - 150); g.lineTo(x + 40, y - 150); g.lineTo(x + 60, y);
+    g.stroke();
+    const a = Math.sin(t * 1.6) * 0.35;
+    g.save(); g.translate(x, y - 150); g.rotate(a);
+    g.strokeStyle = '#7f8c8d'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(-14, 0); g.lineTo(-14, 110); g.moveTo(14, 0); g.lineTo(14, 110); g.stroke();
+    g.fillStyle = '#c0392b'; g.fillRect(-20, 108, 40, 7);
+    g.restore();
+  },
+  rock(g, x, y) {
+    g.fillStyle = '#8d8d8d';
+    g.beginPath(); g.moveTo(x - 30, y); g.quadraticCurveTo(x - 32, y - 30, x - 5, y - 34); g.quadraticCurveTo(x + 28, y - 30, x + 32, y); g.fill();
+    g.fillStyle = Gen.rgba('#ffffff', 0.2); g.beginPath(); g.ellipse(x - 8, y - 24, 10, 5, -0.3, 0, Math.PI * 2); g.fill();
+  },
+  flowers(g, x, y, w, colors) {
+    g.fillStyle = '#4e8a3a';
+    rrect(g, x - w / 2, y - 14, w, 16, 8); g.fill();
+    for (let i = 0; i < w / 14; i++) {
+      const fx = x - w / 2 + 7 + i * 14, fy = y - 14 - (i % 3) * 4;
+      g.strokeStyle = '#3d7a2e'; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(fx, y - 6); g.lineTo(fx, fy); g.stroke();
+      g.fillStyle = colors[i % colors.length];
+      g.beginPath(); g.arc(fx, fy - 2, 5, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffd166'; g.beginPath(); g.arc(fx, fy - 2, 1.8, 0, Math.PI * 2); g.fill();
+    }
+  },
+  streetlight(g, x, y, on) {
+    g.strokeStyle = '#3a3f45'; g.lineWidth = 7;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - 190); g.quadraticCurveTo(x, y - 205, x + 25, y - 200); g.stroke();
+    g.fillStyle = on ? '#ffe08a' : '#e8e4d8';
+    g.beginPath(); g.ellipse(x + 30, y - 195, 16, 7, 0, 0, Math.PI * 2); g.fill();
+  },
+  trafficLight(g, x, y, state) {
+    g.strokeStyle = '#2d3238'; g.lineWidth = 7;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - 150); g.stroke();
+    g.fillStyle = '#2d3238'; rrect(g, x - 15, y - 222, 30, 78, 8); g.fill();
+    ['red', 'yellow', 'green'].forEach((c, i) => {
+      const on = state === c;
+      g.fillStyle = on ? ({ red: '#ff3b30', yellow: '#ffcc00', green: '#34c759' })[c] : '#4a4f55';
+      g.beginPath(); g.arc(x, y - 208 + i * 25, 9, 0, Math.PI * 2); g.fill();
+    });
+  },
+  busStop(g, x, y) {
+    g.strokeStyle = '#5d6d7e'; g.lineWidth = 6;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - 160); g.stroke();
+    g.fillStyle = '#2e86de'; g.beginPath(); g.arc(x, y - 170, 22, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff'; g.font = 'bold 14px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('BUS', x, y - 170);
+  },
+  sign(g, x, y, text, color) {
+    g.font = 'bold 34px system-ui, sans-serif';
+    const w = g.measureText(text).width + 40;
+    g.fillStyle = color;
+    rrect(g, x - w / 2, y - 30, w, 52, 10); g.fill();
+    g.strokeStyle = '#ffffff'; g.lineWidth = 3; g.stroke();
+    g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(text, x, y - 3);
+    return w;
+  },
+  // Objetos que sostienen las personas (relativos a los pies)
+  prop(g, kind, x, y, t, color) {
+    const hy = y - 52;
+    if (kind === 'book') {
+      g.fillStyle = color || '#c0392b'; g.fillRect(x - 16, hy - 8, 15, 20); g.fillRect(x + 1, hy - 8, 15, 20);
+      g.fillStyle = '#fdfaf0'; g.fillRect(x - 14, hy - 6, 12, 16); g.fillRect(x + 2, hy - 6, 12, 16);
+    } else if (kind === 'iceCream') {
+      g.fillStyle = '#d9a066'; g.beginPath(); g.moveTo(x + 18, hy + 10); g.lineTo(x + 12, hy - 8); g.lineTo(x + 24, hy - 8); g.fill();
+      g.fillStyle = '#ff9fb2'; g.beginPath(); g.arc(x + 18, hy - 12, 8, 0, Math.PI * 2); g.fill();
+    } else if (kind === 'coffee') {
+      g.fillStyle = '#ffffff'; g.fillRect(x + 12, hy - 6, 13, 15);
+      g.fillStyle = '#6b3e26'; g.fillRect(x + 12, hy - 6, 13, 4);
+      g.strokeStyle = Gen.rgba('#ffffff', 0.7); g.lineWidth = 2;
+      g.beginPath(); g.moveTo(x + 16, hy - 10); g.quadraticCurveTo(x + 12 + Math.sin(t * 3) * 4, hy - 18, x + 18, hy - 26); g.stroke();
+    } else if (kind === 'phone') {
+      g.fillStyle = '#222'; g.fillRect(x + 12, y - 92, 7, 13);
+    } else if (kind === 'camera') {
+      g.fillStyle = '#333'; g.fillRect(x - 12, y - 86, 24, 15); g.fillStyle = '#777'; g.beginPath(); g.arc(x, y - 78, 5, 0, Math.PI * 2); g.fill();
+      if ((t % 3) < 0.12) { g.fillStyle = Gen.rgba('#ffffff', 0.9); g.beginPath(); g.arc(x, y - 80, 26, 0, Math.PI * 2); g.fill(); }
+    } else if (kind === 'broom') {
+      const a = Math.sin(t * 5) * 0.3;
+      g.save(); g.translate(x + 22, hy); g.rotate(a);
+      g.strokeStyle = '#8a6239'; g.lineWidth = 4; g.beginPath(); g.moveTo(0, -20); g.lineTo(0, 44); g.stroke();
+      g.fillStyle = '#d4a017'; g.beginPath(); g.moveTo(-10, 44); g.lineTo(10, 44); g.lineTo(14, 58); g.lineTo(-14, 58); g.fill();
+      g.restore();
+    } else if (kind === 'wateringCan') {
+      g.fillStyle = '#2e86de'; g.fillRect(x + 14, hy, 22, 16);
+      g.strokeStyle = '#2e86de'; g.lineWidth = 4; g.beginPath(); g.moveTo(x + 36, hy + 4); g.lineTo(x + 50, hy - 4); g.stroke();
+      g.fillStyle = '#6fb7e0';
+      for (let k = 0; k < 4; k++) { const d = ((t * 60 + k * 12) % 44); g.fillRect(x + 50 + k * 2, hy - 2 + d, 3, 5); }
+    } else if (kind === 'bag') {
+      g.fillStyle = '#e0b040'; g.fillRect(x + 20, hy + 2, 20, 22);
+      g.strokeStyle = '#8a6d1d'; g.lineWidth = 2; g.beginPath(); g.arc(x + 30, hy + 2, 6, Math.PI, 0); g.stroke();
+      g.fillStyle = '#27ae60'; g.beginPath(); g.arc(x + 26, hy, 5, 0, Math.PI * 2); g.fill();
+    } else if (kind === 'music') {
+      g.fillStyle = '#222'; g.fillRect(x - 16, y - 108, 32, 5);
+      g.fillStyle = '#e74c3c'; g.beginPath(); g.arc(x - 16, y - 96, 6, 0, Math.PI * 2); g.arc(x + 16, y - 96, 6, 0, Math.PI * 2); g.fill();
+      Draw.notes(g, x + 20, y - 110, t);
+    }
+  },
+  notes(g, x, y, t) {
+    g.font = '20px system-ui, sans-serif'; g.textAlign = 'center';
+    for (let k = 0; k < 3; k++) {
+      const p = (t * 0.6 + k / 3) % 1;
+      g.globalAlpha = 1 - p;
+      g.fillStyle = ['#8e44ad', '#2e86de', '#e67e22'][k];
+      g.fillText(k % 2 ? '♪' : '♫', x + Math.sin(p * 6 + k) * 10, y - p * 50);
+    }
+    g.globalAlpha = 1;
+  },
+  zzz(g, x, y, t) {
+    g.font = 'bold 18px system-ui, sans-serif'; g.textAlign = 'center'; g.fillStyle = '#34495e';
+    for (let k = 0; k < 3; k++) {
+      const p = (t * 0.4 + k / 3) % 1;
+      g.globalAlpha = 1 - p;
+      g.fillText('z', x + p * 24, y - p * 40);
+    }
+    g.globalAlpha = 1;
+  },
+  easel(g, x, y, colors) {
+    g.strokeStyle = '#8a6239'; g.lineWidth = 4;
+    g.beginPath(); g.moveTo(x - 22, y); g.lineTo(x, y - 110); g.lineTo(x + 22, y); g.moveTo(x, y - 110); g.lineTo(x, y); g.stroke();
+    g.fillStyle = '#fdfaf0'; g.fillRect(x - 30, y - 104, 60, 46);
+    colors.forEach((c, i) => { g.fillStyle = c; g.beginPath(); g.arc(x - 16 + i * 14, y - 82 + (i % 2) * 10, 8, 0, Math.PI * 2); g.fill(); });
+  },
+  kite(g, x, y, hx, hy, t, color) {
+    g.strokeStyle = Gen.rgba('#ffffff', 0.8); g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(hx, hy); g.quadraticCurveTo((hx + x) / 2 + 30, (hy + y) / 2 + 40, x, y + 30); g.stroke();
+    g.fillStyle = color;
+    g.beginPath(); g.moveTo(x, y - 30); g.lineTo(x + 22, y); g.lineTo(x, y + 30); g.lineTo(x - 22, y); g.closePath(); g.fill();
+    g.strokeStyle = Gen.shade(color, -0.3); g.lineWidth = 2; g.stroke();
+    g.strokeStyle = color; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(x, y + 30);
+    for (let k = 1; k < 6; k++) g.lineTo(x + Math.sin(t * 4 + k) * 8, y + 30 + k * 12);
+    g.stroke();
+  },
+  rod(g, x, y, tx, ty, t) {
+    g.strokeStyle = '#6b4a2b'; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(x + 14, y - 50); g.lineTo(x + 70, y - 110); g.stroke();
+    g.strokeStyle = Gen.rgba('#ffffff', 0.8); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(x + 70, y - 110); g.lineTo(tx, ty + Math.sin(t * 2) * 2); g.stroke();
+    g.fillStyle = '#e74c3c'; g.beginPath(); g.arc(tx, ty + Math.sin(t * 2) * 2, 4, 0, Math.PI * 2); g.fill();
+  },
+  crumbs(g, x, y, t) {
+    g.fillStyle = '#d9a066';
+    for (let k = 0; k < 5; k++) { const p = (t * 0.8 + k / 5) % 1; g.fillRect(x + 20 + p * 50, y - 50 + p * p * 60, 4, 4); }
+  },
+  cap(g, x, y) {
+    g.fillStyle = '#1b1b1b';
+    g.beginPath(); g.moveTo(x - 24, y - 4); g.lineTo(x, y - 14); g.lineTo(x + 24, y - 4); g.lineTo(x, y + 6); g.closePath(); g.fill();
+    g.fillRect(x - 10, y - 2, 20, 10);
+    g.strokeStyle = '#f1c40f'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 2, y - 4); g.lineTo(x + 18, y + 10); g.stroke();
+  }
+};
+
+/* =========================================================
+   Generación del mundo
+   ========================================================= */
+function genWorld(seed) {
+  const R = Gen.makeRand(seed);
+  const time = R.pick(['día', 'día', 'día', 'atardecer', 'noche']);
+  const sky = SKIES[time];
+  const night = time === 'noche';
+  const leafColors = night ? ['#2f6b3a', '#3a7d45', '#26593a', '#468a4f'] :
+    time === 'atardecer' ? ['#c46a2b', '#8a9a3a', '#b5542a', '#6f8a36'] : ['#3f8f3a', '#5aa648', '#2f7a33', '#6cb655'];
+  const w = {
+    seed, time, sky, night, leafColors, ents: [], grounds: [], solids: [], buildings: [], trees: [], people: [], cars: [],
+    lights: [], ponds: [], benches: [], crossings: [], parks: []
+  };
+  const add = e => { e.cd = 0; e.li = 0; w.ents.push(e); return e; };
+  const names = [...Ingles.NAMES].sort(() => R() - 0.5);
+  let nameIdx = 0;
+  const nextName = () => names[nameIdx++ % names.length];
+
+  // Tipos de lote: 9 casas, 5 edificios, 1 parque
+  const totalLots = ROWS * lotsX.length;
+  const shopKeys = Object.keys(BUILDINGS).sort(() => R() - 0.5).slice(0, 5);
+  const types = [...Array(9).fill('house'), ...shopKeys, 'park'].sort(() => R() - 0.5);
+  let houseNum = 0;
+  const usedHouseColors = {};
+
+  for (let r = 0; r < ROWS; r++) {
+    const base = rowBase(r);
+    lotsX.forEach((lot, li) => {
+      const type = types[r * lotsX.length + li];
+      if (type === 'park') makePark(w, R, add, lot, base, nextName);
+      else makeBuilding(w, R, add, lot, base, type, type === 'house' ? ++houseNum : 0, usedHouseColors);
+    });
+  }
+  // Etiquetas de casas: color si es único, número si se repite
+  w.buildings.forEach(b => {
+    if (b.shop) return;
+    const c = b.color;
+    b.label = usedHouseColors[c] === 1
+      ? { en: `${c} house`, the: `the ${c} house`, esFull: `la casa ${adjEs(COLORS[c], N.house)}` }
+      : { en: `house number ${b.num}`, the: `house number ${b.num}`, esFull: `la casa número ${b.num}` };
+  });
+
+  // Árboles: entre casas, en patios traseros y en los bordes del pueblo
+  const treeSpots = [];
+  for (let r = 0; r < ROWS; r++) {
+    const base = rowBase(r);
+    lotsX.forEach(lot => {
+      const b = w.buildings.find(x => x.lot === lot && x.row === r);
+      if (!b) return;
+      if (b.x0 - lot.left > 150) treeSpots.push([lot.left + (b.x0 - lot.left) / 2, base - R.range(10, 40)]);
+      if (lot.right - b.x1 > 150) treeSpots.push([b.x1 + (lot.right - b.x1) / 2, base - R.range(10, 40)]);
+      if (R.chance(0.6)) treeSpots.push([lot.left + R.range(100, LOT_W - 100), base - R.range(260, 420)]);
+    });
+  }
+  for (let x = 150; x < WORLD_W; x += R.range(380, 560)) treeSpots.push([x, TOP_Y - 10]);
+  for (let x = 200; x < WORLD_W; x += R.range(420, 600)) treeSpots.push([x, BOTTOM_Y + 40]);
+  for (let y = 300; y < BOTTOM_Y; y += R.range(500, 700)) { treeSpots.push([120, y]); treeSpots.push([WORLD_W - 120, y]); }
+  treeSpots.forEach(([x, y]) => makeTree(w, R, add, x, y));
+
+  // Aves en algunos árboles
+  const birdColors = ['#e74c3c', '#2e86de', '#f1c40f', '#8e44ad'];
+  w.trees.filter(t => t.y > TOP_Y && t.y < BOTTOM_Y).sort(() => R() - 0.5).slice(0, 4).forEach(t => {
+    const color = R.pick(birdColors);
+    const bx = t.x + R.sym(t.sprite.w * 0.2), by = t.y - t.sprite.height * R.range(0.55, 0.75);
+    add({
+      kind: 'bird', x: bx, y: t.y + 0.5, box: () => ({ x: bx - 14, y: by - 16, w: 36, h: 24 }),
+      draw: (g, tt) => { Draw.bird(g, bx, by, color, tt, false); if (Math.sin(tt * 1.3 + bx) > 0.4) Draw.notes(g, bx + 10, by - 10, tt); },
+      lessons: () => [L.noun(N.bird), L.prep('The bird', 'El pájaro', 'in', N.tree),
+        L.free('verb', 'singing', 'cantar', 'The bird is singing.', 'El pájaro está cantando.', '🐦', 'to sing · singing · sang  (cantar)'),
+        L.color(N.bird, colorName(color))]
+    });
+  });
+
+  // Calles: faroles, semáforos, paradas de autobús y cruces peatonales
+  for (let r = 0; r < ROWS; r++) {
+    const base = rowBase(r);
+    for (let x = 350; x < WORLD_W - 200; x += 820) {
+      if (vstreets.some(v => x > v.x0 - 60 && x < v.x1 + 60)) continue;
+      const lx = x, ly = base + SW_A[1] - 6;
+      w.lights.push({ x: lx + 30, y: ly - 195 });
+      add({
+        kind: 'streetlight', x: lx, y: ly, box: () => ({ x: lx - 12, y: ly - 210, w: 60, h: 210 }),
+        draw: g => Draw.streetlight(g, lx, ly, night),
+        lessons: () => [L.noun(N.streetlight), L.adj(N.streetlight, night ? 'on' : 'off'),
+          L.prep('The streetlight', 'La farola', 'onSurface', N.sidewalk)]
+      });
+    }
+    vstreets.forEach((v, vi) => {
+      const lx = v.x0 - 26, ly = base + SW_A[1] - 4;
+      const offset = R.range(0, 14);
+      const tl = add({
+        kind: 'trafficLight', x: lx, y: ly, row: r, v, offset,
+        box: () => ({ x: lx - 20, y: ly - 228, w: 40, h: 228 }),
+        state: () => { const c = (now + offset) % 15; return c < 7 ? 'green' : c < 9 ? 'yellow' : 'red'; },
+        draw: g => Draw.trafficLight(g, lx, ly, tl.state()),
+        lessons: () => {
+          const s = tl.state();
+          const main = s === 'red' ? L.free('verb', 'stop', 'parar', 'The traffic light is red. The cars stop.', 'El semáforo está en rojo. Los carros se detienen.', '🚦', 'to stop · stopping · stopped  (parar)')
+            : s === 'green' ? L.free('verb', 'go', 'avanzar', 'The traffic light is green. The cars go.', 'El semáforo está en verde. Los carros avanzan.', '🚦', 'to go · going · went  (ir, avanzar)')
+            : L.free('adj', 'yellow', 'amarillo', 'The traffic light is yellow. Slow down!', 'El semáforo está en amarillo. ¡Más despacio!', '🚦', 'slow down = ir más despacio');
+          return [L.noun(N.trafficLight), main, L.prep('The traffic light', 'El semáforo', 'near', N.crosswalk)];
+        }
+      });
+      w.crossings.push({ x0: v.x0 + 30, x1: v.x1 - 30, y0: base + ROAD[0] + 14, y1: base + ROAD[1] - 14, row: r });
+      add({
+        kind: 'crosswalk', x: v.x0 + VS_W / 2, y: base + ROAD[0] + 2, noDraw: true,
+        box: () => ({ x: v.x0 + 30, y: base + ROAD[0] + 14, w: VS_W - 60, h: ROAD[1] - ROAD[0] - 28 }),
+        lessons: () => [L.noun(N.crosswalk, 'People cross the street here.', 'Aquí la gente cruza la calle.'),
+          L.free('verb', 'cross', 'cruzar', 'Look both ways before you cross the street.', 'Mira a ambos lados antes de cruzar la calle.', '🚸', 'to cross · crossing · crossed  (cruzar)')]
+      });
+    });
+  }
+  const busSpots = [];
+  for (let k = 0; k < 2; k++) {
+    const r = R.int(0, ROWS - 1), lot = R.pick(lotsX);
+    const bx = lot.cx + R.sym(300), by = rowBase(r) + SW_B[0] + 30;
+    busSpots.push([bx, by]);
+    add({
+      kind: 'busStop', x: bx, y: by, box: () => ({ x: bx - 24, y: by - 194, w: 48, h: 194 }),
+      draw: g => Draw.busStop(g, bx, by),
+      lessons: () => [L.noun(N.busStop, 'People wait for the bus here.', 'Aquí la gente espera el autobús.'),
+        L.prep('The bus stop', 'La parada de autobús', 'onSurface', N.sidewalk)]
+    });
+  }
+
+  // Carros
+  for (let r = 0; r < ROWS; r++) {
+    const n = R.int(2, 3);
+    for (let i = 0; i < n; i++) makeCar(w, R, add, r, i % 2, R.range(0, WORLD_W), night);
+  }
+
+  // Personas con acciones (el vocabulario de verbos y adverbios)
+  makePeople(w, R, add, nextName, busSpots);
+
+  // Cielo: sol o luna y nubes
+  const skyObj = night ? N.moon : N.sun;
+  const skyEnt = add({
+    kind: 'sky', x: 0, y: -99999, sky: true, box: () => ({ x: cam.x + 300 - 55, y: -1020 - 55, w: 110, h: 110 }),
+    draw: () => {},
+    lessons: () => [L.noun(skyObj), night ? L.adj(N.moon, 'bright') : L.adj(N.sun, 'hot'),
+      L.free('adj', night ? 'dark' : time === 'atardecer' ? 'orange' : 'sunny', night ? 'oscuro' : time === 'atardecer' ? 'naranja' : 'soleado',
+        night ? 'It is night. The sky is dark.' : time === 'atardecer' ? 'It is evening. The sky is orange.' : 'It is a sunny day. The sky is blue.',
+        night ? 'Es de noche. El cielo está oscuro.' : time === 'atardecer' ? 'Es la tarde. El cielo está naranja.' : 'Es un día soleado. El cielo es azul.', '🌤️'),
+      L.prep(night ? 'The moon' : 'The sun', night ? 'La luna' : 'El sol', 'in', N.sky)]
+  });
+  skyEnt.cd = 0;
+  w.clouds = Array.from({ length: 10 }, () => ({ x: R.range(0, WORLD_W), y: R.range(-1250, -700), s: R.range(0.8, 1.6) }));
+  w.stars = Array.from({ length: 180 }, () => [R.range(-800, WORLD_W + 800), R.range(-2400, SKY_Y - 120), R.range(1, 3)]);
+  w.flowerDots = Array.from({ length: 700 }, () => [R.range(0, WORLD_W), R.range(BOTTOM_Y - 200, BOTTOM_Y + 400), R.pick(['#e63946', '#ffb703', '#f28482', '#ffffff', '#b388eb'])]);
+
+  // Misiones posibles
+  w.missions = buildMissions(w, R);
+  return w;
+}
+
+function makeBuilding(w, R, add, lot, base, type, num, usedHouseColors) {
+  const shop = type !== 'house' ? BUILDINGS[type] : null;
+  const hp = shop ? {
+    ...Casa.config.presets['Moderna'], floors: type === 'school' || type === 'hospital' ? 3 : 2, width: R.range(1.15, 1.35),
+    windows: R.int(3, 4), roof: 'plano', garage: 'no', chimney: 'no', fence: 'no', trees: 0, wallTexture: R.pick(['liso', 'ladrillo']),
+    randomColors: false, wallColor: shop.wall, roofColor: '#3a3a3a', doorColor: shop.door, trimColor: '#ffffff', time: w.time, solo: true
+  } : {
+    ...Casa.config.presets['Aleatoria'], floors: R.int(1, 3), width: R.range(0.85, 1.2), windows: R.int(2, 4),
+    windowSize: R.range(0.9, 1.1), roofPitch: R.range(0.8, 1.3), fence: 'no', trees: 0, time: w.time, solo: true
+  };
+  const seed = `${w.seed}:edificio:${base}:${lot.cx}`;
+  const parts = noBg(Casa.build(hp, Gen.makeRand(seed)));
+  const geo = parts.geo;
+  const ox = lot.cx - 500, oy = base - geo.groundY;
+  const X = x => x + ox, Y = y => y + oy;
+  const b = {
+    kind: shop ? type : 'house', shop, num, lot, row: Math.round(base / ROW_H), base, parts, geo, ox, oy,
+    x0: X(geo.x0), x1: X(geo.x1), color: colorName(geo.wall), faces: []
+  };
+  if (!shop) usedHouseColors[b.color] = (usedHouseColors[b.color] || 0) + 1;
+  // Rostros en algunas ventanas
+  geo.windows.forEach((win, k) => {
+    if (!R.chance(shop ? 0.2 : 0.3)) return;
+    const fp = { ...Rostro.config.presets['Aleatorio'], smile: R.range(0, 0.9) };
+    b.faces.push({ win, parts: noBg(Rostro.build(fp, Gen.makeRand(`${seed}:ventana:${k}`))) });
+  });
+  w.buildings.push(b);
+  w.solids.push({ x0: X(geo.x0) - 10, x1: X(geo.x1) + 10, y0: base - 70, y1: base + 4 });
+  const n = shop ? shop.n : N.house;
+  const wallC = b.color, doorC = colorName(geo.door.color), roofC = colorName(geo.roof);
+  const label = () => shop ? { en: n.en, the: 'the ' + n.en, esFull: elN(n) } : b.label;
+
+  add({
+    kind: b.kind, x: lot.cx, y: base - 5, building: b,
+    box: () => ({ x: X(geo.houseX0), y: Y(geo.roofPeak), w: geo.houseX1 - geo.houseX0, h: base - Y(geo.roofPeak) }),
+    draw: (g, t) => drawBuilding(g, b, t),
+    lessons: () => {
+      const ls = [];
+      if (shop) ls.push(L.theNoun(n, shop.fact[0], shop.fact[1]));
+      else ls.push(L.noun(N.house, `It is house number ${num}.`, `Es la casa número ${num}.`));
+      ls.push(L.color(n, wallC));
+      if (geo.floors === 1) ls.push(L.adj(n, 'small'));
+      else if (geo.floors === 3) ls.push(L.adj(n, 'big'));
+      ls.push(L.number(n, geo.floors, { en: 'floors', es: 'pisos', g: 'm', pl: true }));
+      ls.push(L.number(n, geo.windows.length, N.windows));
+      if (geo.texture === 'ladrillo') ls.push(L.adj(n, 'brick'));
+      if (geo.texture === 'tablas') ls.push(L.adj(n, 'wooden'));
+      if (b.faces.length) ls.push(L.free('verb', 'looking', 'mirar', `Someone is looking out of the window.`, 'Alguien está mirando por la ventana.', '👀', 'to look · looking · looked  (mirar)'));
+      return ls;
+    }
+  });
+  // Partes de la casa como objetos que se pueden señalar
+  const d = geo.door;
+  add({
+    kind: 'door', x: X(d.x + d.w / 2), y: base - 1, noDraw: true, box: () => ({ x: X(d.x) - 6, y: Y(d.y) - 6, w: d.w + 12, h: d.h + 6 }),
+    lessons: () => [L.noun(N.door), L.color(N.door, doorC), L.adj(N.door, b.ring > 0 ? 'open' : 'closed'),
+      L.free('verb', 'knock', 'tocar', 'Knock on the door!', '¡Toca la puerta!', '✊', 'to knock · knocking · knocked  (tocar a la puerta)')]
+  });
+  const win0 = geo.windows[0];
+  if (win0) add({
+    kind: 'window', x: X(win0.x + win0.w / 2), y: base - 2, noDraw: true, box: () => ({ x: X(win0.x) - 8, y: Y(win0.y) - 8, w: win0.w + 16, h: win0.h + 16 }),
+    lessons: () => [L.noun(N.window), L.number(n, geo.windows.length, N.windows)]
+  });
+  add({
+    kind: 'roof', x: X(geo.cx), y: base - 3, noDraw: true,
+    box: () => ({ x: X(geo.houseX0) - 28, y: Y(geo.roofPeak) - 6, w: geo.houseX1 - geo.houseX0 + 56, h: geo.wallTop - geo.roofPeak + 10 }),
+    lessons: () => [L.noun(N.roof), L.color(N.roof, roofC), ...(geo.roofType === 'plano' ? [L.adj(N.roof, 'flat')] : [])]
+  });
+  if (geo.chimney) add({
+    kind: 'chimney', x: X(geo.chimney.x), y: base - 4, noDraw: true,
+    box: () => ({ x: X(geo.chimney.x) - 6, y: Y(geo.chimney.y) - 4, w: 56, h: geo.chimney.h }),
+    lessons: () => [L.noun(N.chimney), L.free('noun', 'smoke', 'humo', 'Smoke comes out of the chimney.', 'El humo sale de la chimenea.', '💨')]
+  });
+  if (geo.garage) add({
+    kind: 'garage', x: X(geo.garage.x + geo.garage.w / 2), y: base - 4, noDraw: true,
+    box: () => ({ x: X(geo.garage.x), y: Y(geo.garage.y), w: geo.garage.w, h: geo.garage.h }),
+    lessons: () => [L.noun(N.garage, 'People park cars in the garage.', 'La gente estaciona carros en el garaje.'),
+      L.prep('The garage', 'El garaje', 'nextTo', label())]
+  });
+  // Buzón con el número de la casa
+  const mx = X(d.x + d.w / 2) + 70, my = base + SW_A[0] - 2;
+  if (!shop) add({
+    kind: 'mailbox', x: mx, y: my, box: () => ({ x: mx - 22, y: my - 76, w: 44, h: 76 }), draw: g => Draw.mailbox(g, mx, my, num),
+    lessons: () => [L.noun(N.mailbox, 'Letters go in the mailbox.', 'Las cartas van en el buzón.'), L.color(N.mailbox, 'blue'),
+      L.prep('The mailbox', 'El buzón', 'inFrontOf', label())]
+  });
+  // Objetos del jardín delantero
+  const doorX = X(d.x + d.w / 2);
+  const hx0 = X(geo.houseX0), hx1 = X(geo.houseX1);
+  if (!shop && R.chance(0.6)) {
+    const fx = R.chance(0.5) ? hx0 + 60 : hx1 - 60;
+    const colors = [R.pick(['#e63946', '#f28482', '#ffb703']), R.pick(['#ffffff', '#b388eb', '#e63946'])];
+    const fy = base + 28;
+    b.flowerBed = { x: fx, y: fy };
+    add({
+      kind: 'flowers', x: fx, y: fy, box: () => ({ x: fx - 50, y: fy - 30, w: 100, h: 34 }), draw: g => Draw.flowers(g, fx, fy, 96, colors),
+      lessons: () => [L.noun(N.flowers), L.color(N.flowers, colorName(colors[0])), L.prep('The flowers', 'Las flores', 'inFrontOf', label(), 'are', 'están'),
+        L.adj(N.flowers, 'beautiful')]
+    });
+  }
+  if (!shop && R.chance(0.35)) {
+    const bx = doorX + (R.chance(0.5) ? -110 : 150), by = base + 50, color = R.pick(['#e74c3c', '#2e86de', '#27ae60', '#f1c40f']);
+    add({
+      kind: 'bicycle', x: bx, y: by, box: () => ({ x: bx - 46, y: by - 60, w: 92, h: 62 }), draw: g => Draw.bicycle(g, bx, by, color),
+      lessons: () => [L.noun(N.bicycle), L.color(N.bicycle, colorName(color)), L.prep('The bicycle', 'La bicicleta', 'inFrontOf', label())]
+    });
+  }
+  if (R.chance(0.45)) {
+    const tx = geo.garage ? X(geo.garage.x + geo.garage.w) + 40 : hx1 + 40, ty = base - 6;
+    const nextTo = () => geo.garage ? N.garage : label();
+    add({
+      kind: 'trashCan', x: tx, y: ty, box: () => ({ x: tx - 24, y: ty - 54, w: 48, h: 56 }), draw: g => Draw.trashCan(g, tx, ty),
+      lessons: () => [L.noun(N.trashCan, 'Put the trash in the trash can.', 'Pon la basura en el bote de basura.'), L.color(N.trashCan, 'green'),
+        L.prep('The trash can', 'El bote de basura', 'nextTo', nextTo())]
+    });
+  }
+  if (!shop && R.chance(0.3)) {
+    const dx = hx0 - 90, dy = base - 20, color = R.pick(['#c0392b', '#2e86de', '#8e6e53']), dogC = R.pick(['#8d6e63', '#f5deb3', '#3b2a20', '#e0e0e0']);
+    const sleeping = R.chance(0.6);
+    add({ kind: 'doghouse', x: dx, y: dy, box: () => ({ x: dx - 46, y: dy - 88, w: 92, h: 90 }), draw: g => Draw.doghouse(g, dx, dy, color),
+      lessons: () => [L.noun(N.doghouse), L.color(N.doghouse, colorName(color))] });
+    add({
+      kind: 'dog', x: dx + 60, y: dy + 2, box: () => ({ x: dx + 30, y: dy - 50, w: 76, h: 54 }),
+      draw: (g, t) => { Draw.dog(g, dx + 60, dy + 2, dogC, t, sleeping ? 'sleep' : 'sit', -1); if (sleeping) Draw.zzz(g, dx + 70, dy - 30, t); },
+      lessons: () => [L.noun(N.dog), L.prep('The dog', 'El perro', 'nextTo', N.doghouse), L.color(N.dog, colorName(dogC)),
+        sleeping ? L.free('verb', 'sleeping', 'dormir', 'The dog is sleeping.', 'El perro está durmiendo.', '💤', 'to sleep · sleeping · slept  (dormir)')
+          : L.adj(N.dog, 'happy')]
+    });
+  }
+  if (!shop && geo.roofType !== 'plano' && R.chance(0.3)) {
+    const cx = X(geo.cx) + R.sym(40), cy = Y(geo.roofPeak) + 4, catC = R.pick(['#f39c12', '#2c2c2c', '#9e9e9e', '#f5f5f5']);
+    add({
+      kind: 'cat', x: cx, y: base + 0.5, box: () => ({ x: cx - 30, y: cy - 34, w: 60, h: 38 }),
+      draw: (g, t) => { Draw.cat(g, cx, cy, catC, t, true); Draw.zzz(g, cx + 18, cy - 24, t); },
+      lessons: () => [L.noun(N.cat), L.prep('The cat', 'El gato', 'on', N.roof),
+        L.free('verb', 'sleeping', 'dormir', 'The cat is sleeping on the roof.', 'El gato está durmiendo sobre el techo.', '💤', 'to sleep · sleeping · slept  (dormir)'),
+        L.color(N.cat, colorName(catC))]
+    });
+  }
+  if (shop && type === 'cafe') {
+    [-1, 1].forEach(s => {
+      const tx = doorX + s * 160, ty = base + 40, uc = R.pick(['#e74c3c', '#2e86de', '#27ae60']);
+      add({
+        kind: 'table', x: tx, y: ty, box: () => ({ x: tx - 62, y: ty - 150, w: 124, h: 152 }), draw: g => Draw.table(g, tx, ty, uc),
+        lessons: () => [L.noun(N.table), L.noun(N.umbrella), L.prep('The umbrella', 'La sombrilla', 'above', N.table), L.color(N.umbrella, colorName(uc))]
+      });
+    });
+  }
+  b.doorX = doorX;
+  b.frontY = base + SW_A[0] - 10;
+}
+
+function drawBuilding(g, b, t) {
+  const geo = b.geo;
+  g.save();
+  g.translate(b.ox, b.oy);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  b.parts.forEach(q => q(g));
+  b.faces.forEach(({ win, parts }) => {
+    g.save();
+    g.beginPath();
+    if (win.arch) {
+      g.moveTo(win.x, win.y + win.h); g.lineTo(win.x, win.y + win.w / 2);
+      g.arc(win.x + win.w / 2, win.y + win.w / 2, win.w / 2, Math.PI, 0); g.lineTo(win.x + win.w, win.y + win.h);
+    } else g.rect(win.x, win.y, win.w, win.h);
+    g.clip();
+    const s = win.w * 0.85 / 460;
+    g.translate(win.x + win.w / 2, win.y + win.h * 0.62);
+    g.scale(s, s);
+    g.translate(-400, -430);
+    parts.forEach(q => q(g));
+    g.restore();
+  });
+  if (b.shop) {
+    Draw.sign(g, geo.cx, geo.wallTop - 44, b.shop.sign, Gen.shade(b.shop.door, -0.1));
+    if (b.kind === 'hospital') {
+      g.fillStyle = '#d7263d';
+      g.fillRect(geo.cx - 12, geo.wallTop + 20, 24, 70); g.fillRect(geo.cx - 35, geo.wallTop + 43, 70, 24);
+    }
+  }
+  if (b.ring > 0) {
+    const d = geo.door;
+    g.save();
+    g.beginPath(); g.rect(d.x, d.y, d.w, d.h); g.clip();
+    g.fillStyle = '#2b2118'; g.fillRect(d.x, d.y, d.w, d.h);
+    g.fillStyle = Gen.rgba('#ffd98a', 0.35); g.fillRect(d.x, d.y, d.w, d.h);
+    if (b.resident) {
+      g.translate(d.x + d.w / 2, d.y + d.h); const s = d.h * 0.95 / HUMAN_H; g.scale(s, s);
+      drawHuman(g, b.resident, 0, 0, { pose: 'saludo' });
+    }
+    g.restore();
+  }
+  g.restore();
+}
+
+function makeTree(w, R, add, x, y) {
+  const len = R.range(115, 170);
+  const sprite = makeTreeSprite(R, len, w.leafColors);
+  const tall = len > 145;
+  const t = add({
+    kind: 'tree', x, y, sprite, tall,
+    box: () => ({ x: x + sprite.ox, y: y + sprite.oy, w: sprite.w, h: sprite.h }),
+    draw: g => g.drawImage(sprite.img, x + sprite.ox, y + sprite.oy, sprite.w, sprite.h),
+    lessons: () => [L.noun(N.tree), L.adj(N.tree, tall ? 'tall' : 'short'),
+      L.color(N.leaves, w.time === 'atardecer' ? 'orange' : 'green'),
+      L.free('prep', 'under', 'debajo de', 'The grass is under the tree.', 'El césped está debajo del árbol.', '📍')]
+  });
+  w.trees.push(t);
+  w.solids.push({ x0: x - 14, x1: x + 14, y0: y - 14, y1: y + 4 });
+}
+
+function makeCar(w, R, add, row, lane, x, night) {
+  const p = { ...Carro.config.presets['Aleatorio'], variation: 0.5, randomColors: true, scene: true, driver: true, skyColor: night ? '#0d1b2a' : '#8ec5ea', spin: 0 };
+  const parts = noBg(Carro.build(p, Gen.makeRand(`${w.seed}:carro:${row}:${w.cars.length}`)));
+  const geo = parts.geo;
+  const typeEn = { 'sedán': 'sedan', 'deportivo': 'sports car', 'SUV': 'SUV', 'pickup': 'pickup truck', 'furgoneta': 'van', 'compacto': 'small car' };
+  const typeEs = { 'sedán': 'sedán', 'deportivo': 'carro deportivo', 'SUV': 'camioneta SUV', 'pickup': 'camioneta pickup', 'furgoneta': 'furgoneta', 'compacto': 'carro pequeño' };
+  const info = geo.type;
+  const car = add({
+    kind: 'car', p, parts, geo, row, lane, dir: lane === 0 ? 1 : -1, x, y: rowBase(row) + LANE[lane],
+    speed: R.range(150, 260), cur: 0, len: geo.L * CAR_SCALE, type: info,
+    box: () => ({ x: car.x - car.len / 2, y: car.y - geo.L * CAR_SCALE * 0.42, w: car.len, h: geo.L * CAR_SCALE * 0.44 }),
+    draw: g => {
+      g.save(); g.translate(car.x, car.y); g.scale(car.dir * CAR_SCALE, CAR_SCALE); g.translate(-600, -geo.groundY);
+      g.lineCap = 'round'; g.lineJoin = 'round'; parts.forEach(q => q(g)); g.restore();
+    },
+    lessons: () => {
+      const moving = car.cur > 25;
+      const c = car.colorKey;
+      const tEn = typeEn[info] || 'car', tEs = typeEs[info] || 'carro';
+      return [
+        L.free('noun', tEn === 'SUV' ? 'SUV' : tEn, tEs, `This is ${Ingles.a(tEn)}.`, `Esto es ${/furgoneta|camioneta/.test(tEs) ? 'una' : 'un'} ${tEs}.`, '🚗'),
+        L.color(N.car, c),
+        moving ? L.free('adv', car.cur > 190 ? 'fast' : 'slowly', car.cur > 190 ? 'rápido' : 'despacio',
+          `The ${c} car is moving ${car.cur > 190 ? 'fast' : 'slowly'}.`, `El carro ${adjEs(COLORS[c], N.car)} se mueve ${car.cur > 190 ? 'rápido' : 'despacio'}.`, '⚡', car.cur > 190 ? 'fast → fast (irregular)' : 'slow → slowly')
+          : L.free('verb', 'stopped', 'detenerse', `The ${c} car has stopped.`, `El carro ${adjEs(COLORS[c], N.car)} se ha detenido.`, '🛑', 'to stop · stopping · stopped  (parar)'),
+        L.free('verb', 'driving', 'conducir', 'The driver is driving the car.', 'El conductor está conduciendo el carro.', '🚗', 'to drive · driving · drove  (conducir)'),
+        L.prep('The car', 'El carro', 'onSurface', N.street)
+      ];
+    }
+  });
+  car.cur = car.speed;
+  car.colorKey = colorName(geo.body);
+  w.cars.push(car);
+}
+
+function makePark(w, R, add, lot, base, nextName) {
+  const x0 = lot.left + 40, x1 = lot.right - 40, y0 = base - 860, y1 = base + 50;
+  const park = { x0, x1, y0, y1, lot, base };
+  w.parks.push(park);
+  add({
+    kind: 'park', x: lot.cx, y: y0, noDraw: true, box: () => ({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }),
+    lessons: () => [L.noun(N.park, 'People play and relax here.', 'Aquí la gente juega y descansa.'), L.adj(N.park, 'beautiful'),
+      L.free('noun', 'grass', 'césped', 'The grass is green.', 'El césped es verde.', '🌱')]
+  });
+  add({ kind: 'parkSign', x: lot.cx, y: y1 - 4, box: () => ({ x: lot.cx - 80, y: y1 - 100, w: 160, h: 100 }),
+    draw: g => { g.fillStyle = '#6b4a2b'; g.fillRect(lot.cx - 4, y1 - 60, 8, 60); Draw.sign(g, lot.cx, y1 - 64, 'PARK', '#2e7d4f'); },
+    lessons: () => [L.free('noun', 'sign', 'letrero', 'This is a sign. It says PARK.', 'Esto es un letrero. Dice «PARK» (parque).', '🪧')] });
+  // Estanque con patos
+  const pond = { x: lot.cx + 180, y: base - 470, rx: 230, ry: 95 };
+  w.ponds.push(pond);
+  w.solids.push({ ellipse: pond });
+  add({
+    kind: 'pond', x: pond.x, y: pond.y - pond.ry, noDraw: true, box: () => ({ x: pond.x - pond.rx, y: pond.y - pond.ry, w: pond.rx * 2, h: pond.ry * 2 }),
+    lessons: () => [L.noun(N.pond), L.prep('The ducks', 'Los patos', 'in', N.pond, 'are', 'están'),
+      L.free('noun', 'water', 'agua', 'The water is blue and cold.', 'El agua es azul y fría.', '💧')]
+  });
+  for (let k = 0; k < 3; k++) {
+    const duck = add({
+      kind: 'duck', x: pond.x, y: pond.y, a: R.range(0, 6), sp: R.range(0.15, 0.3), rr: R.range(0.3, 0.75),
+      box: () => ({ x: duck.x - 22, y: duck.y - 32, w: 54, h: 36 }),
+      draw: (g, t) => Draw.duck(g, duck.x, duck.y, t, Math.cos(duck.a) < 0 ? 1 : -1),
+      lessons: () => [L.noun(N.duck), L.free('verb', 'swimming', 'nadar', 'The duck is swimming.', 'El pato está nadando.', '🦆', 'to swim · swimming · swam  (nadar)'),
+        L.free('adv', 'slowly', 'despacio', 'The duck is swimming slowly.', 'El pato está nadando despacio.', '⚡', 'slow → slowly'),
+        L.prep('The duck', 'El pato', 'in', N.pond)]
+    });
+    duck.update = dt => {
+      duck.a += dt * duck.sp;
+      duck.x = pond.x + Math.cos(duck.a) * pond.rx * duck.rr;
+      duck.y = pond.y + Math.sin(duck.a) * pond.ry * duck.rr + 10;
+    };
+  }
+  add({ kind: 'rock', x: pond.x - pond.rx - 20, y: pond.y + 30, box: () => ({ x: pond.x - pond.rx - 54, y: pond.y - 8, w: 68, h: 40 }),
+    draw: g => Draw.rock(g, pond.x - pond.rx - 20, pond.y + 30),
+    lessons: () => [L.noun(N.rock), L.prep('The rock', 'La roca', 'nextTo', N.pond), L.color(N.rock, 'gray')] });
+  // Fuente
+  const fx = lot.cx - 250, fy = base - 120;
+  w.solids.push({ x0: fx - 80, x1: fx + 80, y0: fy - 34, y1: fy + 4 });
+  add({
+    kind: 'fountain', x: fx, y: fy, box: () => ({ x: fx - 84, y: fy - 140, w: 168, h: 144 }), draw: (g, t) => Draw.fountain(g, fx, fy, t * 2),
+    lessons: () => [L.noun(N.fountain), L.free('verb', 'flowing', 'fluir', 'The water is flowing.', 'El agua está fluyendo.', '💧', 'to flow · flowing · flowed  (fluir)'),
+      L.prep('The fountain', 'La fuente', 'in', N.park)]
+  });
+  // Bancas entre árboles
+  const benchSpots = [[lot.cx - 280, base - 330], [lot.cx + 120, base - 170], [lot.cx - 60, base - 600]];
+  benchSpots.forEach(([bx, by], k) => {
+    const bench = { x: bx, y: by, used: false };
+    w.benches.push(bench);
+    const ball = k === 1;
+    add({
+      kind: 'bench', x: bx, y: by, box: () => ({ x: bx - 64, y: by - 68, w: 128, h: 70 }),
+      draw: (g, t) => { Draw.bench(g, bx, by); if (ball) { g.fillStyle = '#e74c3c'; g.beginPath(); g.arc(bx + 20, by - 9, 9, 0, Math.PI * 2); g.fill(); g.fillStyle = '#fff'; g.fillRect(bx + 13, by - 11, 14, 3); } },
+      lessons: () => [L.noun(N.bench), ball ? L.prep('The ball', 'La pelota', 'under', N.bench) : L.prep('The bench', 'La banca', 'between', { en: 'the two trees', esFull: 'los dos árboles' }),
+        L.color(N.bench, 'brown')]
+    });
+    if (!ball) { makeTree(w, R, add, bx - 150, by - 6); makeTree(w, R, add, bx + 150, by - 6); }
+  });
+  // Juegos
+  const sx = lot.cx + 330, sy = base - 180;
+  add({ kind: 'slide', x: sx, y: sy, box: () => ({ x: sx - 58, y: sy - 128, w: 132, h: 130 }), draw: g => Draw.slide(g, sx, sy),
+    lessons: () => [L.noun(N.slide), L.color(N.slide, 'yellow'),
+      L.free('verb', 'slide', 'deslizarse', 'Children slide down the slide.', 'Los niños se deslizan por el tobogán.', '🛝', 'to slide · sliding · slid  (deslizarse)')] });
+  const wx = lot.cx + 440, wy = base - 700;
+  add({ kind: 'swing', x: wx, y: wy, box: () => ({ x: wx - 64, y: wy - 156, w: 128, h: 158 }), draw: (g, t) => Draw.swing(g, wx, wy, t),
+    lessons: () => [L.noun(N.swing), L.free('verb', 'moving', 'moverse', 'The swing is moving.', 'El columpio se está moviendo.', '🎠', 'to move · moving · moved  (moverse)'),
+      L.prep('The swing', 'El columpio', 'behind', N.pond)] });
+  const fl = [lot.cx - 420, base - 40];
+  add({ kind: 'flowers', x: fl[0], y: fl[1], box: () => ({ x: fl[0] - 70, y: fl[1] - 30, w: 140, h: 34 }), draw: g => Draw.flowers(g, fl[0], fl[1], 136, ['#e63946', '#ffb703', '#b388eb']),
+    lessons: () => [L.noun(N.flowers), L.adj(N.flowers, 'beautiful'), L.prep('The flowers', 'Las flores', 'in', N.park, 'are', 'están')] });
+  // Cometa sobre el parque (la vuela una persona: ver makePeople)
+  park.kiteSpot = [lot.cx - 30, base - 330];
+  park.pond = pond;
+  park.paintSpot = [lot.cx - 420, base - 520];
+  park.openSpots = [[lot.cx + 20, base - 60], [lot.cx - 420, base - 230], [lot.cx + 350, base - 60], [lot.cx - 150, base - 780]];
+}
+
+function makePeople(w, R, add, nextName, busSpots) {
+  const slots = [];
+  w.parks.forEach(park => {
+    w.benches.forEach((b, i) => { if (i !== 1) slots.push({ act: R.pick(['sit', 'sleep', 'sit']), x: b.x, y: b.y + 1, bench: b }); });
+    slots.push({ act: 'fish', x: park.pond.x - 60, y: park.pond.y + park.pond.ry + 30, target: [park.pond.x - 10, park.pond.y + 20] });
+    slots.push({ act: 'feed', x: park.pond.x + 120, y: park.pond.y + park.pond.ry + 32 });
+    slots.push({ act: 'kite', x: park.kiteSpot[0], y: park.kiteSpot[1] });
+    slots.push({ act: 'paint', x: park.paintSpot[0], y: park.paintSpot[1] });
+    const open = [...park.openSpots].sort(() => R() - 0.5);
+    ['play', 'dance', 'jump', 'stretch', 'listen', 'sing', 'photo', 'read'].sort(() => R() - 0.5).slice(0, 4)
+      .forEach((a, i) => { if (open[i]) slots.push({ act: a, x: open[i][0], y: open[i][1] }); });
+  });
+  w.buildings.forEach(b => {
+    if (b.shop) {
+      if (b.kind === 'cafe') { slots.push({ act: 'drink', x: b.doorX - 110, y: b.base + 44 }); slots.push({ act: 'eat', x: b.doorX + 110, y: b.base + 44 }); }
+      else if (b.kind === 'bakery') slots.push({ act: 'eat', x: b.doorX + 90, y: b.base + 40 });
+      else if (b.kind === 'library' || b.kind === 'school') slots.push({ act: 'read', x: b.doorX - 100, y: b.base + 40 });
+      return;
+    }
+    if (b.flowerBed && R.chance(0.7)) slots.push({ act: 'water', x: b.flowerBed.x - 60, y: b.flowerBed.y + 16 });
+    else if (R.chance(0.5)) slots.push({ act: R.pick(['sweep', 'phone', 'wave', 'photo', 'listen', 'wave']), x: b.doorX + R.pick([-120, 120]), y: b.base + R.range(90, 112) });
+  });
+  busSpots.forEach(([x, y]) => slots.push({ act: 'wait', x: x + 40, y: y + 2 }));
+  const stationary = slots.sort(() => R() - 0.5).slice(0, 18);
+  const movers = ['walk', 'walk', 'run', 'walkDog', 'ride', 'carry', 'walk', 'run'].map(act => {
+    const r = R.int(0, ROWS - 1), side = R.chance(0.5) ? 'A' : 'B';
+    return { act, x: R.range(300, WORLD_W - 300), y: rowBase(r) + (side === 'A' ? R.range(84, 112) : R.range(396, 424)), move: true };
+  });
+  [...stationary, ...movers].forEach(slot => makePerson(w, R, add, nextName(), slot));
+}
+
+function makePerson(w, R, add, name, slot) {
+  const act = ACTIONS[slot.act];
+  const poses = [act.pose || 'de pie', 'saludo', 'de pie'];
+  const seed = `${w.seed}:persona:${name}`;
+  const h = makeHuman(seed, [...new Set(poses)], { smile: R.range(0.2, 0.95) });
+  const geo = h.geo;
+  let speed = 0, advKey = R.pick(act.advs);
+  if (slot.act === 'walk') { speed = R.chance(0.5) ? R.range(28, 42) : R.range(75, 95); advKey = speed < 50 ? 'slowly' : 'quickly'; }
+  if (slot.act === 'run') speed = R.range(150, 190);
+  if (slot.act === 'ride') speed = R.range(130, 170);
+  if (slot.act === 'walkDog') speed = R.range(40, 55);
+  if (slot.act === 'carry') { speed = R.range(35, 50); advKey = 'carefully'; }
+  const dogC = R.pick(['#8d6e63', '#f5deb3', '#3b2a20', '#e0e0e0']);
+  const bikeC = R.pick(['#e74c3c', '#2e86de', '#27ae60', '#f1c40f']);
+  const kiteC = R.pick(['#e74c3c', '#f1c40f', '#8e44ad', '#2e86de']);
+  const bookC = R.pick(['#c0392b', '#2e86de', '#27ae60']);
+  const paintC = [R.pick(['#e74c3c', '#f1c40f']), R.pick(['#2e86de', '#27ae60']), R.pick(['#8e44ad', '#e67e22'])];
+  const person = add({
+    kind: 'person', name, act, actKey: slot.act, advKey, h, x: slot.x, y: slot.y, dir: R.chance(0.5) ? 1 : -1, speed,
+    move: !!slot.move, bench: slot.bench, target: slot.target, pause: 0, talkT: 0,
+    box: () => {
+      if (slot.act === 'sleep') return { x: person.x - 60, y: person.y - 60, w: 120, h: 60 };
+      return { x: person.x - 30, y: person.y - HUMAN_H * 1.12 - (slot.act === 'ride' ? 26 : 0), w: 60, h: HUMAN_H * 1.14 + (slot.act === 'ride' ? 26 : 0) };
+    },
+    draw: (g, t) => drawPerson(g, person, t, { dogC, bikeC, kiteC, bookC, paintC }),
+    lessons: () => personLessons(person)
+  });
+  if (slot.bench) slot.bench.used = true;
+  person.geo = geo;
+  w.people.push(person);
+}
+
+function personLessons(p) {
+  const act = p.act, name = p.name, geo = p.geo;
+  const ls = [L.verb(name, act), L.adverb(name, act, p.advKey)];
+  const topN = { 'camiseta': N.tshirt, 'camisa': N.shirt, 'suéter': N.sweater, 'abrigo': N.coat, 'vestido': N.dress }[geo.topType];
+  const botN = { 'pantalón': N.pants, 'shorts': N.shorts, 'falda': N.skirt }[geo.bottomType];
+  const tc = colorName(geo.topColor);
+  if (topN) ls.push(L.free('adj', COLORS[tc].en, COLORS[tc].m, `${name} is wearing ${Ingles.a(COLORS[tc].en + ' ' + topN.en)}.`,
+    `${name} lleva ${Ingles.un(topN)} ${topN.es} ${adjEs(COLORS[tc], topN)}.`, topN.icon, `${topN.en} = ${topN.es}`));
+  if (botN && geo.topType !== 'vestido') {
+    const bc = colorName(geo.bottomColor);
+    ls.push(L.free('noun', botN.en, botN.es, `${name} is wearing ${botN.pl ? COLORS[bc].en + ' ' + botN.en : Ingles.a(COLORS[bc].en + ' ' + botN.en)}.`,
+      `${name} lleva ${botN.pl ? '' : Ingles.un(botN) + ' '}${botN.es} ${adjEs(COLORS[bc], botN)}.`, botN.icon, `${botN.en} = ${botN.es}`));
+  }
+  const hair = geo.face.hairStyle;
+  const hairLesson = {
+    'largo': ['long', 'largo', 'has long hair', 'tiene el pelo largo'], 'corto': ['short', 'corto', 'has short hair', 'tiene el pelo corto'],
+    'rizado': ['curly', 'rizado', 'has curly hair', 'tiene el pelo rizado'], 'calvo': ['bald', 'calvo/a', 'is bald', 'es calvo/a'],
+    'moño': ['bun', 'moño', 'has a bun', 'tiene un moño'], 'afro': ['afro', 'afro', 'has an afro', 'tiene un afro'], 'mohicano': ['mohawk', 'mohicano', 'has a mohawk', 'tiene un mohicano']
+  }[hair];
+  if (hairLesson) ls.push(L.free('adj', hairLesson[0], hairLesson[1], `${name} ${hairLesson[2]}.`, `${name} ${hairLesson[3]}.`, '💇'));
+  if (geo.face.glasses !== 'no') ls.push(L.free('noun', 'glasses', 'gafas', `${name} wears glasses.`, `${name} usa gafas.`, '👓'));
+  if (geo.face.beard === 'barba') ls.push(L.free('noun', 'beard', 'barba', `${name} has a beard.`, `${name} tiene barba.`, '🧔'));
+  if (geo.face.smile > 0.45) ls.push(L.free('adj', 'happy', 'feliz', `${name} is happy.`, `${name} está feliz.`, '😊'));
+  const where = relationOf(p.x, p.y);
+  if (where) ls.push(L.free('prep', where.prepEn, where.prepEs, `${name} is ${where.en}.`, `${name} está ${where.es}.`, '📍'));
+  return ls;
+}
+
+function drawPerson(g, p, t, c) {
+  const a = p.actKey, x = p.x, y = p.y;
+  const talking = p.talkT > 0;
+  if (a === 'sleep') {
+    Draw.bench(g, x, y);
+    drawHuman(g, p.h, x - 50, y - 44, { pose: 'de pie', rot: Math.PI / 2 });
+    Draw.zzz(g, x + 50, y - 60, t);
+    return;
+  }
+  if (a === 'sit') {
+    g.save(); g.beginPath(); g.rect(x - 80, y - 400, 160, 400 - 30); g.clip();
+    drawHuman(g, p.h, x, y + 18, { pose: talking ? 'saludo' : 'de pie' });
+    g.restore();
+    Draw.bench(g, x, y);
+    g.strokeStyle = p.geo.bottomType === 'pantalón' ? p.geo.bottomColor : '#d9a066'; g.lineWidth = 8;
+    g.beginPath(); g.moveTo(x - 7, y - 26); g.lineTo(x - 7, y - 4); g.moveTo(x + 7, y - 26); g.lineTo(x + 7, y - 4); g.stroke();
+    g.fillStyle = '#222'; g.fillRect(x - 13, y - 5, 12, 5); g.fillRect(x + 1, y - 5, 12, 5);
+    return;
+  }
+  const moving = p.move && p.pause <= 0;
+  let pose = p.act.pose || 'de pie', lift = 0, sway = 0;
+  if (talking) pose = 'saludo';
+  if (a === 'jump' && !talking) lift = Math.abs(Math.sin(t * 5)) * 26;
+  if (a === 'dance' && !talking) { sway = Math.sin(t * 4) * 0.12; lift = Math.abs(Math.sin(t * 8)) * 6; }
+  if (a === 'stretch' && !talking) sway = Math.sin(t * 1.5) * 0.18;
+  if (a === 'wave') p.h.poses['saludo'].p.phase = t * 3;
+  if (a === 'ride') {
+    drawHuman(g, p.h, x, y - 24, { moving: true });
+    Draw.bicycle(g, x, y, c.bikeC, p.h.walkP.phase);
+    return;
+  }
+  if (a === 'walkDog') Draw.dog(g, x + p.dir * 58, y + 4, c.dogC, t, moving ? 'walk' : 'sit', p.dir);
+  if (a === 'paint') Draw.easel(g, x + 60, y, c.paintC);
+  drawHuman(g, p.h, x, y, { moving, pose, lift, sway });
+  if (a === 'walkDog') {
+    g.strokeStyle = '#c0392b'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(x + 26, y - 48); g.quadraticCurveTo(x + p.dir * 50, y - 20, x + p.dir * 80, y - 34); g.stroke();
+  }
+  const obj = p.act.obj;
+  if (['book', 'iceCream', 'coffee', 'phone', 'camera', 'broom', 'wateringCan', 'bag', 'music'].includes(obj)) Draw.prop(g, obj, x, y - lift, t, c.bookC);
+  if (a === 'sing') Draw.notes(g, x + 14, y - 104, t);
+  if (a === 'kite') Draw.kite(g, x + 90 + Math.sin(t * 0.7) * 30, y - 330 + Math.sin(t) * 20, x + 26, y - 112, t, c.kiteC);
+  if (a === 'fish' && p.target) Draw.rod(g, x, y, p.target[0], p.target[1], t);
+  if (a === 'feed') Draw.crumbs(g, x, y, t);
+  if (a === 'play') {
+    const by = y - Math.abs(Math.sin(t * 4)) * 60;
+    g.fillStyle = '#e74c3c'; g.beginPath(); g.arc(x + 44, by - 10, 10, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff'; g.fillRect(x + 36, by - 12, 16, 3);
+  }
+}
+
+/* =========================================================
+   Relaciones espaciales (preposiciones en vivo)
+   ========================================================= */
+function surfaceAt(x, y) {
+  for (let r = 0; r < ROWS; r++) {
+    const b = rowBase(r);
+    if (y >= b + ROAD[0] && y < b + ROAD[1]) {
+      if (vstreets.some(v => x > v.x0 + 30 && x < v.x1 - 30)) return { key: 'crosswalk', en: 'on the crosswalk', es: 'en el paso de peatones' };
+      return { key: 'street', en: 'on the street', es: 'en la calle' };
+    }
+    if ((y >= b + SW_A[0] - 12 && y < b + ROAD[0]) || (y >= b + SW_B[0] && y < b + SW_B[1] + 8)) return { key: 'sidewalk', en: 'on the sidewalk', es: 'en la acera' };
+  }
+  const v = vstreets.find(v => x > v.x0 - 40 && x < v.x1 + 40);
+  if (v && y > ROAD[0] && y < rowBase(ROWS - 1) + ROAD[1]) {
+    if (x < v.x0 || x > v.x1) return { key: 'sidewalk', en: 'on the sidewalk', es: 'en la acera' };
+    return { key: 'street', en: 'on the street', es: 'en la calle' };
+  }
+  if (W && W.parks.some(p => x > p.x0 && x < p.x1 && y > p.y0 && y < p.y1)) return { key: 'park', en: 'in the park', es: 'en el parque' };
+  return { key: 'grass', en: 'on the grass', es: 'en el césped' };
+}
+
+// Relación con el edificio o lugar más cercano
+function relationOf(x, y) {
+  if (!W) return null;
+  const surf = surfaceAt(x, y);
+  let rel = null;
+  for (const b of W.buildings) {
+    const lab = b.shop ? { the: 'the ' + b.shop.n.en, es: elN(b.shop.n) } : { the: b.label.the, es: b.label.esFull };
+    const inside = x > b.x0 - 10 && x < b.x1 + 10;
+    if (inside && y >= b.base - 5 && y < b.base + 150) { rel = { key: 'inFrontOf', b, prepEn: 'in front of', prepEs: 'delante de', en: `in front of ${lab.the}`, es: Ingles.prepEs(Ingles.PREP.inFrontOf, lab.es) }; break; }
+    if (inside && y < b.base - 70 && y > b.base - 460) { rel = { key: 'behind', b, prepEn: 'behind', prepEs: 'detrás de', en: `behind ${lab.the}`, es: Ingles.prepEs(Ingles.PREP.behind, lab.es) }; break; }
+    if (!inside && Math.abs(y - b.base) < 110 && (Math.abs(x - b.x0) < 170 || Math.abs(x - b.x1) < 170)) {
+      rel = { key: 'nextTo', b, prepEn: 'next to', prepEs: 'al lado de', en: `next to ${lab.the}`, es: Ingles.prepEs(Ingles.PREP.nextTo, lab.es) };
+    }
+  }
+  if (!rel) {
+    for (const p of W.ponds) {
+      if (Math.hypot((x - p.x) / (p.rx + 120), (y - p.y) / (p.ry + 90)) < 1) { rel = { key: 'near', prepEn: 'near', prepEs: 'cerca de', en: 'near the pond', es: 'cerca del estanque' }; break; }
+    }
+  }
+  if (!rel) {
+    const t = W.trees.find(t => Math.abs(t.x - x) < 55 && Math.abs(t.y - y) < 45);
+    if (t) rel = { key: 'under', prepEn: 'under', prepEs: 'debajo de', en: 'under the tree', es: 'debajo del árbol' };
+  }
+  const surfPrep = surf.en.split(' ')[0];
+  if (!rel) return { surf, prepEn: surfPrep, prepEs: surf.es.split(' ')[0], en: surf.en, es: surf.es };
+  return { surf, rel, prepEn: rel.prepEn, prepEs: rel.prepEs, en: `${surf.en}, ${rel.en}`, es: `${surf.es}, ${rel.es}` };
+}
+
+/* =========================================================
+   Misiones
+   ========================================================= */
+function buildMissions(w, R) {
+  const list = { noun: [], adj: [], verb: [], adv: [], prep: [] };
+  const near = (e, d = 150) => () => Math.hypot(player.x - e.x, (player.y - e.y) * 1.3) < d;
+  const kinds = {};
+  w.ents.forEach(e => { if (!e.noDraw && e.kind && e.lessons && !e.sky) (kinds[e.kind] = kinds[e.kind] || []).push(e); });
+  const nounOf = { dog: N.dog, cat: N.cat, duck: N.duck, fountain: N.fountain, bench: N.bench, bicycle: N.bicycle, mailbox: N.mailbox,
+    trashCan: N.trashCan, busStop: N.busStop, trafficLight: N.trafficLight, streetlight: N.streetlight, slide: N.slide, swing: N.swing,
+    doghouse: N.doghouse, flowers: N.flowers, rock: N.rock, bird: N.bird, table: N.table };
+  Object.entries(nounOf).forEach(([k, n]) => {
+    if (!kinds[k]) return;
+    list.noun.push({ cat: 'noun', en: `Find ${n.pl ? 'some ' + n.en : Ingles.a(n.en)}!`, es: `¡Encuentra ${Ingles.unN(n)}!`,
+      target: () => nearestOf(kinds[k]), check: () => kinds[k].some(e => near(e, 160)()), ok: `You found ${Ingles.a(n.en)}!`.replace('a flowers', 'the flowers') });
+  });
+  w.buildings.filter(b => b.shop).forEach(b => {
+    const n = b.shop.n;
+    list.noun.push({ cat: 'noun', en: `Go to the ${n.en}!`, es: `¡Ve a ${elN(n).replace(/^el /, 'el ')}!`.replace('a el ', 'al '),
+      target: () => ({ x: b.doorX, y: b.frontY }), check: () => Math.abs(player.x - b.doorX) < 150 && player.y > b.base - 10 && player.y < b.base + 150, ok: `You are at the ${n.en}!` });
+    list.prep.push({ cat: 'prep', en: `Go behind the ${n.en}!`, es: `¡Ve ${Ingles.prepEs(Ingles.PREP.behind, elN(n))}!`,
+      target: () => ({ x: (b.x0 + b.x1) / 2, y: b.base - 150 }), check: () => relKey(b) === 'behind', ok: `You are behind the ${n.en}!` });
+  });
+  w.buildings.filter(b => !b.shop).forEach(b => {
+    list.prep.push({ cat: 'prep', en: `Stand in front of ${b.label.the}!`, es: `¡Párate ${Ingles.prepEs(Ingles.PREP.inFrontOf, b.label.esFull)}!`,
+      target: () => ({ x: b.doorX, y: b.frontY }), check: () => relKey(b) === 'inFrontOf', ok: `You are in front of ${b.label.the}!` });
+    list.adj.push({ cat: 'adj', en: `Find ${b.label.the}!`, es: `¡Encuentra ${b.label.esFull}!`,
+      target: () => ({ x: b.doorX, y: b.frontY }), check: () => Math.abs(player.x - (b.x0 + b.x1) / 2) < (b.x1 - b.x0) / 2 + 60 && Math.abs(player.y - b.base) < 220, ok: `You found ${b.label.the}!` });
+    list.prep.push({ cat: 'prep', en: `Stand next to ${b.label.the}!`, es: `¡Párate ${Ingles.prepEs(Ingles.PREP.nextTo, b.label.esFull)}!`,
+      target: () => ({ x: b.x1 + 90, y: b.base + 20 }), check: () => relKey(b) === 'nextTo', ok: `You are next to ${b.label.the}!` });
+  });
+  const carColors = [...new Set(w.cars.map(c => c.colorKey))];
+  carColors.forEach(ck => {
+    const c = COLORS[ck];
+    const cars = w.cars.filter(x => x.colorKey === ck);
+    list.adj.push({ cat: 'adj', en: `Find the ${c.en} car!`, es: `¡Encuentra el carro ${c.m}!`, target: () => nearestOf(cars),
+      check: () => cars.some(e => Math.abs(player.x - e.x) < 170 && Math.abs(player.y - e.y) < 130), ok: `You found the ${c.en} car!` });
+  });
+  const tallTrees = w.trees.filter(t => t.tall && t.y > TOP_Y && t.y < BOTTOM_Y);
+  if (tallTrees.length) list.adj.push({ cat: 'adj', en: 'Find a tall tree!', es: '¡Encuentra un árbol alto!', target: () => nearestOf(tallTrees),
+    check: () => tallTrees.some(t => Math.hypot(player.x - t.x, player.y - t.y) < 120), ok: 'You found a tall tree!' });
+  list.prep.push({ cat: 'prep', en: 'Stand under a tree!', es: '¡Párate debajo de un árbol!', target: () => nearestOf(w.trees.filter(t => t.y > TOP_Y && t.y < BOTTOM_Y)),
+    check: () => relationOf(player.x, player.y)?.rel?.key === 'under', ok: 'You are under the tree!' });
+  list.prep.push({ cat: 'prep', en: 'Stand on the crosswalk!', es: '¡Párate en el paso de peatones!', target: () => { const v = vstreets[0]; return { x: (v.x0 + v.x1) / 2, y: rowBase(0) + 250 }; },
+    check: () => surfaceAt(player.x, player.y).key === 'crosswalk', ok: 'You are on the crosswalk!' });
+  list.prep.push({ cat: 'prep', en: 'Go near the pond!', es: '¡Ve cerca del estanque!', target: () => w.ponds[0] && { x: w.ponds[0].x, y: w.ponds[0].y + 130 },
+    check: () => relationOf(player.x, player.y)?.rel?.key === 'near', ok: 'You are near the pond!' });
+  const byAct = {};
+  w.people.forEach(p => (byAct[p.actKey] = byAct[p.actKey] || []).push(p));
+  Object.entries(byAct).forEach(([k, ps]) => {
+    const act = ACTIONS[k];
+    const esSub = act.es.replace(/^se está /, 'se esté ').replace(/^está /, 'esté ');
+    list.verb.push({ cat: 'verb', en: `Find someone who is ${act.en}!`, es: `¡Encuentra a alguien que ${esSub}!`, target: () => nearestOf(ps),
+      check: () => ps.some(p => Math.hypot(player.x - p.x, player.y - p.y) < 140), ok: `Yes! ${ps[0].name} is ${act.en}.` });
+    const advs = [...new Set(ps.map(p => p.advKey))];
+    advs.forEach(ak => {
+      const pp = ps.filter(p => p.advKey === ak), adv = Ingles.ADV[ak];
+      list.adv.push({ cat: 'adv', en: `Find someone who is ${act.en} ${adv.en}!`, es: `¡Encuentra a alguien que ${esSub} ${adv.es}!`, target: () => nearestOf(pp),
+        check: () => pp.some(p => Math.hypot(player.x - p.x, player.y - p.y) < 140), ok: `Great! ${pp[0].name} is ${act.en} ${adv.en}.` });
+    });
+  });
+  const order = ['noun', 'verb', 'prep', 'adj', 'adv'];
+  const out = [];
+  for (let round = 0; round < 12; round++) order.forEach(c => { const l = list[c]; if (l.length) out.push(l[Math.floor(R() * l.length)]); });
+  return out;
+}
+
+function nearestOf(list) {
+  let best = null, bd = Infinity;
+  list.forEach(e => { const d = Math.hypot(e.x - player.x, e.y - player.y); if (d < bd) { bd = d; best = e; } });
+  return best;
+}
+function relKey(b) {
+  const r = relationOf(player.x, player.y);
+  return r && r.rel && r.rel.b === b ? r.rel.key : null;
+}
+
+function startMission() {
+  if (!W.missions.length) return;
+  mission = { ...W.missions[missionIdx % W.missions.length], t: 0, done: false };
+  missionIdx++;
+  $('mEn').textContent = mission.en;
+  $('mEs').textContent = mission.es;
+  $('mission').classList.remove('done');
+  $('mission').style.borderLeft = `5px solid ${CATS[mission.cat].color}`;
+}
+
+/* =========================================================
+   Lecciones y profesor
+   ========================================================= */
+function teach(ent, manual) {
+  const ls = ent.lessons();
+  if (!ls.length) return;
+  // Si ya conoces bien esa palabra, pasa a otra lección del mismo objeto
+  if (!manual) {
+    for (let k = 0; k < ls.length; k++) {
+      const c = ls[ent.li % ls.length], known = progress.words[`${c.cat}:${c.word.toLowerCase()}`];
+      if (!known || known.n < 2) break;
+      ent.li++;
+    }
+  }
+  const l = ls[ent.li % ls.length];
+  ent.li++;
+  ent.cd = now + (manual ? 4 : 45);
+  recentKinds[ent.kind] = now;
+  lesson = { ...l, ent, t: 0, dur: 8 };
+  showLesson(l);
+  guide.pointT = 8;
+  sayBubble(guide, l.en);
+  Voice.speak(l.en);
+  recordWord(l);
+}
+
+function teachFree(l) {
+  lesson = { ...l, ent: null, t: 0, dur: 7 };
+  showLesson(l);
+  guide.pointT = 0;
+  sayBubble(guide, l.en);
+  Voice.speak(l.en);
+  recordWord(l);
+}
+
+function recordWord(l) {
+  const key = `${l.cat}:${l.word.toLowerCase()}`;
+  const e = progress.words[key] || { cat: l.cat, word: l.word, wordEs: l.wordEs, en: l.en, es: l.es, n: 0 };
+  e.n++;
+  e.en = l.en; e.es = l.es;
+  progress.words[key] = e;
+  saveProgress();
+  updateStats();
+}
+
+function showLesson(l) {
+  const c = CATS[l.cat];
+  $('lChip').textContent = `${c.name} · ${c.es}`;
+  $('lChip').style.background = c.color;
+  $('lesson').style.setProperty('--mark', c.color);
+  $('lWord').textContent = `${l.icon || ''} ${l.word}`;
+  $('lWordEs').textContent = `= ${l.wordEs}`;
+  const esc = s => s.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]);
+  const re = new RegExp(`\\b(${l.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'i');
+  $('lEn').innerHTML = esc(l.en).replace(re, '<mark>$1</mark>');
+  $('lEs').textContent = l.es;
+  $('lExtra').textContent = l.extra || '';
+  $('lesson').classList.remove('hidden');
+}
+
+function updateStats() {
+  const n = Object.keys(progress.words).length;
+  $('stats').innerHTML = `<span>⭐ <b>${progress.stars}</b> misiones</span><span>📘 <b>${n}</b> palabras</span>`;
+}
+
+let bubbles = [];
+function sayBubble(who, text, dur = 4.5) {
+  bubbles = bubbles.filter(b => b.who !== who);
+  bubbles.push({ who, text, t: dur });
+}
+
+// Distancia a la base del objeto (en 2.5D lo cercano es lo que está a nuestros pies)
+const recentKinds = {};
+function candidatesNear(x, y, r, varied) {
+  return W.ents.filter(e => e.lessons && !e.sky && e.kind !== 'park')
+    .map(e => {
+      const b = e.box();
+      const cx = Math.max(b.x, Math.min(x, b.x + b.w));
+      const d = Math.hypot(cx - x, (e.y - y) * 1.2);
+      const penalty = varied ? (e.kind === 'tree' ? 70 : 0) + (now - (recentKinds[e.kind] ?? -999) < 60 ? 140 : 0) : 0;
+      return [e, d, d + penalty];
+    })
+    .filter(([, d]) => d < r).sort((a, b) => a[2] - b[2]);
+}
+
+let whereState = { key: '', since: 0, said: -99, text: null };
+function autoTeach() {
+  if (!settings.auto || !started) return;
+  if (lesson && lesson.t < lesson.dur) return;
+  if (now - lastLessonEnd < 2.2) return;
+  const c = candidatesNear(player.x, player.y, 260, true).find(([e]) => e.cd <= now);
+  if (c) { teach(c[0], false); return; }
+  // Si no hay nada nuevo cerca: preposición según dónde está el jugador o adverbio según cómo se mueve
+  if (whereState.text && now - whereState.since > 1.5 && now - whereState.said > 25) {
+    whereState.said = now;
+    const w = whereState.text;
+    teachFree(L.free('prep', w.prepEn, w.prepEs, `You are ${w.en}.`, `Estás ${w.es}.`, '📍'));
+    return;
+  }
+  if (player.moving && now - (player.advSaid || -99) > 40 && player.moveTime > 1.5) {
+    player.advSaid = now;
+    const run = player.running;
+    teachFree(run ? L.free('adv', 'quickly', 'rápidamente', 'You are running quickly!', '¡Estás corriendo rápidamente!', '⚡', 'quick → quickly')
+      : L.free('adv', 'slowly', 'despacio', 'You are walking slowly.', 'Estás caminando despacio.', '⚡', 'slow → slowly'));
+  }
+}
+
+function askNearest() {
+  const c = candidatesNear(player.x, player.y, 340, true);
+  if (c.length) teach(c[0][0], true);
+  else if (whereState.text) {
+    const w = whereState.text;
+    teachFree(L.free('prep', w.prepEn, w.prepEs, `You are ${w.en}.`, `Estás ${w.es}.`, '📍'));
+  }
+}
+
+/* =========================================================
+   Simulación
+   ========================================================= */
+function blocked(x, y) {
+  if (x < 20 || x > WORLD_W - 20 || y < TOP_Y || y > BOTTOM_Y) return true;
+  return W.solids.some(s => s.ellipse ? Math.hypot((x - s.ellipse.x) / (s.ellipse.rx + 8), (y - s.ellipse.y) / (s.ellipse.ry + 8)) < 1
+    : x > s.x0 && x < s.x1 && y > s.y0 && y < s.y1);
+}
+
+function update(dt) {
+  now += dt;
+  const pl = player;
+  let dx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), dy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+  if (dx || dy) pl.target = null;
+  if (pl.target) {
+    const ex = pl.target.x - pl.x, ey = pl.target.y - pl.y, d = Math.hypot(ex, ey);
+    if (d < 12) pl.target = null; else { dx = ex / d; dy = ey / d; }
+  } else if (dx && dy) { dx *= 0.7071; dy *= 0.7071; }
+  const run = keys.shift;
+  const sp = run ? 420 : 210;
+  const nx = pl.x + dx * sp * dt, ny = pl.y + dy * sp * 0.75 * dt;
+  let movedX = false, movedY = false;
+  if (!blocked(nx, pl.y)) { pl.x = nx; movedX = dx !== 0; }
+  if (!blocked(pl.x, ny)) { pl.y = ny; movedY = dy !== 0; }
+  if (pl.target && !movedX && !movedY) pl.target = null;
+  pl.moving = movedX || movedY;
+  pl.running = pl.moving && run;
+  pl.moveTime = pl.moving ? (pl.moveTime || 0) + dt : 0;
+  if (pl.moving) pl.h.walkP.phase += dt * (run ? 16 : 9);
+
+  // Profesor: te sigue y se para a tu lado para señalar
+  const gx = pl.x - 70, gy = pl.y - 12;
+  const gd = Math.hypot(gx - guide.x, gy - guide.y);
+  guide.moving = gd > 30;
+  if (guide.moving) {
+    const gs = Math.min(gd * 3, run ? 440 : 260);
+    guide.x += (gx - guide.x) / gd * gs * dt;
+    guide.y += (gy - guide.y) / gd * gs * dt;
+    guide.h.walkP.phase += dt * 9;
+  }
+  guide.pointT = Math.max(0, (guide.pointT || 0) - dt);
+
+  // Carros con semáforos y peatones
+  W.cars.forEach(car => {
+    let target = car.speed;
+    W.cars.forEach(o => {
+      if (o === car || o.row !== car.row || o.lane !== car.lane) return;
+      const gap = (o.x - car.x) * car.dir, need = (o.len + car.len) / 2 + 60;
+      if (gap > 0 && gap < need * 1.7) target = Math.min(target, gap < need ? 0 : o.cur * 0.9);
+    });
+    const front = car.x + car.dir * car.len / 2;
+    W.ents.forEach(e => {
+      if (e.kind !== 'trafficLight' || e.row !== car.row || e.state() === 'green') return;
+      const stop = car.dir > 0 ? e.v.x0 - 12 : e.v.x1 + 12;
+      const gap = (stop - front) * car.dir;
+      if (gap > -8 && gap < 140) target = 0;
+    });
+    [pl, guide, ...W.people].forEach(b => {
+      if (b.y > car.y + 20 || b.y < car.y - 110) return;
+      const gap = (b.x - car.x) * car.dir;
+      if (gap > 0 && gap < car.len / 2 + 150) target = 0;
+    });
+    car.cur += (target - car.cur) * Math.min(1, dt * (target < car.cur ? 6 : 1.4));
+    car.x += car.dir * car.cur * dt;
+    if (car.x > WORLD_W + 400) car.x = -400;
+    if (car.x < -400) car.x = WORLD_W + 400;
+    car.p.spin += car.cur * dt / (CAR_SCALE * car.geo.r);
+  });
+
+  // Personas que caminan
+  W.people.forEach(p => {
+    p.talkT = Math.max(0, p.talkT - dt);
+    if (p.pause > 0) { p.pause -= dt; return; }
+    if (!p.move) return;
+    const nx2 = p.x + p.dir * p.speed * dt;
+    if (nx2 < 250 || nx2 > WORLD_W - 250 || Math.random() < dt * 0.02) p.dir *= -1;
+    else p.x = nx2;
+    p.h.walkP.phase += dt * (p.speed > 120 ? 14 : 3 + p.speed * 0.1);
+  });
+  W.ents.forEach(e => e.update && e.update(dt));
+  W.buildings.forEach(b => { if (b.ring > 0) b.ring -= dt; });
+
+  // Lección actual
+  if (lesson) {
+    lesson.t += dt;
+    if (lesson.t >= lesson.dur) { lesson = null; lastLessonEnd = now; $('lesson').classList.add('hidden'); }
+  }
+  bubbles = bubbles.filter(b => (b.t -= dt) > 0);
+
+  // Dónde estoy
+  if (Math.floor(now * 4) !== Math.floor((now - dt) * 4)) {
+    const w = relationOf(pl.x, pl.y);
+    const k = w ? w.en : '';
+    if (k !== whereState.key) { whereState.key = k; whereState.since = now; whereState.text = w; }
+    if (w) $('where').innerHTML = `📍 <b>You are ${w.en}.</b><br>Estás ${w.es}.`;
+    autoTeach();
+  }
+
+  // Misión
+  if (mission) {
+    mission.t += dt;
+    if (started && !mission.done && missionMet(mission)) {
+      mission.done = true;
+      progress.stars++;
+      saveProgress();
+      updateStats();
+      $('mission').classList.add('done');
+      const txt = `Great job! ${mission.ok}`;
+      sayBubble(guide, txt);
+      Voice.speak(txt);
+      confetti(pl.x, pl.y - 120);
+      setTimeout(() => { startMission(); if (started) setTimeout(() => Voice.speak(mission.en), 400); }, 3200);
+    }
+  }
+  particles = particles.filter(p => (p.life -= dt) > 0);
+  particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 600 * dt; });
+
+  // Cámara
+  cam.x += (pl.x - cam.x) * Math.min(1, dt * 5);
+  cam.y += (pl.y - 120 - cam.y) * Math.min(1, dt * 5);
+}
+
+function missionMet(m) { try { return !!m.check(); } catch { return false; } }
+
+function confetti(x, y) {
+  for (let i = 0; i < 60; i++) {
+    particles.push({ x, y, vx: (Math.random() - 0.5) * 500, vy: -Math.random() * 500 - 150, life: 1.6,
+      c: ['#e74c3c', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6'][i % 5] });
+  }
+}
+
+/* =========================================================
+   Dibujo
+   ========================================================= */
+function render() {
+  const Wc = canvas.width, Hc = canvas.height, dpr = window.devicePixelRatio || 1;
+  const scale = Hc / VIEW_H * cam.zoom * Math.max(1, Math.min(1.25, (Wc / Hc) / 1.4));
+  const g = ctx;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = W.sky.grass;
+  g.fillRect(0, 0, Wc, Hc);
+  g.translate(Wc / 2, Hc / 2);
+  g.scale(scale, scale);
+  g.translate(-cam.x, -cam.y);
+  const vl = cam.x - Wc / 2 / scale, vr = cam.x + Wc / 2 / scale, vt = cam.y - Hc / 2 / scale, vb = cam.y + Hc / 2 / scale;
+  const sky = W.sky;
+
+  // Cielo y colinas en el borde superior del pueblo
+  if (vt < SKY_Y) {
+    const grd = g.createLinearGradient(0, -2400, 0, SKY_Y);
+    grd.addColorStop(0, sky.top); grd.addColorStop(1, sky.bottom);
+    g.fillStyle = grd;
+    g.fillRect(vl - 10, Math.min(vt, -2400) - 10, vr - vl + 20, SKY_Y - Math.min(vt, -2400) + 10);
+    if (W.night) {
+      g.fillStyle = '#fff';
+      W.stars.forEach(([x, y, s]) => { if (x > vl && x < vr && y > vt) g.fillRect(x, y, s, s); });
+    } else {
+      g.fillStyle = Gen.rgba('#ffffff', 0.85);
+      W.clouds.forEach(c => {
+        const x = ((c.x + now * 8) % (WORLD_W + 600)) - 300;
+        g.beginPath();
+        [[0, 0, 60], [65, -25, 72], [135, 0, 56], [68, 18, 62]].forEach(([dx, dy, rr]) => { g.moveTo(x + dx * c.s + rr * c.s, c.y + dy * c.s); g.arc(x + dx * c.s, c.y + dy * c.s, rr * c.s, 0, Math.PI * 2); });
+        g.fill();
+      });
+    }
+    g.fillStyle = W.night ? '#f4f1de' : W.time === 'día' ? '#fff3b0' : '#ffd07a';
+    g.beginPath(); g.arc(cam.x + 300, -1020, 50, 0, Math.PI * 2); g.fill();
+    g.fillStyle = sky.hill;
+    g.beginPath(); g.moveTo(vl - 20, SKY_Y + 2);
+    for (let x = Math.floor(vl / 40) * 40; x <= vr + 40; x += 40) g.lineTo(x, SKY_Y - 120 - 70 * Math.sin(x / 700) - 40 * Math.sin(x / 260 + 1));
+    g.lineTo(vr + 20, SKY_Y + 2); g.fill();
+  }
+
+  // Suelo: aceras, calles, cruces
+  const L0 = vl - 50, Wd = vr - vl + 100;
+  for (let r = 0; r < ROWS; r++) {
+    const b = rowBase(r);
+    if (b + SW_B[1] < vt || b + SW_A[0] > vb) continue;
+    g.fillStyle = sky.sidewalk;
+    g.fillRect(L0, b + SW_A[0], Wd, SW_A[1] - SW_A[0]);
+    g.fillRect(L0, b + SW_B[0], Wd, SW_B[1] - SW_B[0]);
+    g.fillStyle = sky.road; g.fillRect(L0, b + ROAD[0], Wd, ROAD[1] - ROAD[0]);
+    g.fillStyle = Gen.shade(sky.sidewalk, -0.25); g.fillRect(L0, b + ROAD[0] - 3, Wd, 7); g.fillRect(L0, b + ROAD[1] - 4, Wd, 7);
+    g.strokeStyle = '#f2c94c'; g.lineWidth = 6; g.setLineDash([70, 55]);
+    g.beginPath(); g.moveTo(Math.floor(L0 / 125) * 125, b + 295); g.lineTo(vr + 150, b + 295); g.stroke(); g.setLineDash([]);
+  }
+  vstreets.forEach(v => {
+    const y0 = rowBase(0) + ROAD[0], y1 = rowBase(ROWS - 1) + ROAD[1];
+    g.fillStyle = sky.sidewalk; g.fillRect(v.x0 - 40, y0, VS_W + 80, y1 - y0);
+    g.fillStyle = sky.road; g.fillRect(v.x0, y0, VS_W, y1 - y0);
+    g.strokeStyle = '#f2c94c'; g.lineWidth = 6; g.setLineDash([60, 50]);
+    g.beginPath(); g.moveTo(v.x0 + VS_W / 2, y0); g.lineTo(v.x0 + VS_W / 2, y1); g.stroke(); g.setLineDash([]);
+  });
+  g.fillStyle = Gen.rgba('#ffffff', 0.9);
+  W.crossings.forEach(c => { for (let x = c.x0; x < c.x1 - 10; x += 36) g.fillRect(x, c.y0, 18, c.y1 - c.y0); });
+  // Parques y estanques
+  W.parks.forEach(p => {
+    g.fillStyle = Gen.shade(sky.grass, 0.1);
+    rrect(g, p.x0, p.y0, p.x1 - p.x0, p.y1 - p.y0, 60); g.fill();
+    g.fillStyle = '#d8c7a2';
+    g.fillRect(p.lot.cx - 30, p.y0 + 40, 60, p.y1 - p.y0 - 40);
+    g.fillRect(p.x0 + 40, p.base - 300, p.x1 - p.x0 - 80, 50);
+  });
+  W.ponds.forEach(p => Draw.pondGround(g, p, now));
+  W.flowerDots.forEach(([x, y, c]) => { if (x > vl && x < vr && y > vt && y < vb) { g.fillStyle = c; g.beginPath(); g.arc(x, y, 4, 0, Math.PI * 2); g.fill(); } });
+
+  // Entidades ordenadas por profundidad
+  const ents = [];
+  W.ents.forEach(e => {
+    if (e.noDraw || !e.draw || e.sky) return;
+    const b = e.box();
+    if (b.x + b.w < vl - 400 || b.x > vr + 400 || b.y + b.h < vt - 300 || b.y > vb + 400) return;
+    ents.push(e);
+  });
+  ents.push({ y: guide.y, draw: () => drawGuide(g) });
+  ents.push({ y: player.y + 0.1, draw: () => drawPlayer(g) });
+  ents.sort((a, b) => a.y - b.y).forEach(e => e.draw(g, now));
+
+  // Noche: oscurecer y encender luces
+  if (W.night) {
+    g.fillStyle = 'rgba(10, 18, 45, 0.38)';
+    g.fillRect(vl - 10, vt - 10, vr - vl + 20, vb - vt + 20);
+    g.globalCompositeOperation = 'lighter';
+    W.lights.forEach(l => {
+      if (l.x < vl - 200 || l.x > vr + 200 || l.y < vt - 300 || l.y > vb + 300) return;
+      const grd = g.createRadialGradient(l.x, l.y, 0, l.x, l.y, 200);
+      grd.addColorStop(0, 'rgba(255, 210, 120, 0.35)'); grd.addColorStop(1, 'rgba(255, 210, 120, 0)');
+      g.fillStyle = grd; g.fillRect(l.x - 200, l.y - 200, 400, 400);
+    });
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  // Señalización del profesor
+  if (lesson && lesson.ent && lesson.t < lesson.dur) drawPointer(g, lesson);
+  // Ayuda para la misión (después de un rato)
+  if (mission && !mission.done && mission.t > 18 && mission.target) {
+    const tg = mission.target();
+    if (tg) {
+      const ang = Math.atan2(tg.y - player.y, tg.x - player.x);
+      const r = 90;
+      g.save(); g.translate(player.x + Math.cos(ang) * r, player.y - 50 + Math.sin(ang) * r); g.rotate(ang);
+      g.fillStyle = CATS[mission.cat].color; g.globalAlpha = 0.85;
+      g.beginPath(); g.moveTo(18, 0); g.lineTo(-10, -12); g.lineTo(-4, 0); g.lineTo(-10, 12); g.closePath(); g.fill();
+      g.restore();
+    }
+  }
+  drawBubbles(g, scale);
+  particles.forEach(p => { g.fillStyle = p.c; g.globalAlpha = Math.min(1, p.life); g.fillRect(p.x, p.y, 10, 6); });
+  g.globalAlpha = 1;
+  drawMinimap(Wc, Hc, dpr);
+}
+
+function drawGuide(g) {
+  const pointing = guide.pointT > 0 && lesson && lesson.ent;
+  drawHuman(g, guide.h, guide.x, guide.y, { moving: guide.moving && !pointing, pose: pointing ? 'saludo' : 'de pie' });
+  Draw.cap(g, guide.x, guide.y - HUMAN_H * 1.13);
+  g.font = 'bold 15px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = 'rgba(255,255,255,0.9)'; rrect(g, guide.x - 36, guide.y + 8, 72, 20, 10); g.fill();
+  g.fillStyle = '#2f7d4f'; g.fillText('Teacher', guide.x, guide.y + 18);
+}
+
+function drawPlayer(g) {
+  drawHuman(g, player.h, player.x, player.y, { moving: player.moving });
+  const top = player.y - HUMAN_H * 1.22 + Math.sin(now * 5) * 4;
+  g.fillStyle = '#ff4d6d';
+  g.beginPath(); g.moveTo(player.x - 11, top - 22); g.lineTo(player.x + 11, top - 22); g.lineTo(player.x, top - 6); g.closePath(); g.fill();
+  g.font = 'bold 15px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = 'rgba(255,255,255,0.9)'; rrect(g, player.x - 22, player.y + 8, 44, 20, 10); g.fill();
+  g.fillStyle = '#c2185b'; g.fillText('You', player.x, player.y + 18);
+}
+
+function drawPointer(g, l) {
+  const b = l.ent.box();
+  const pulse = 0.5 + 0.5 * Math.sin(now * 6);
+  const color = CATS[l.cat].color;
+  // Resalta el objeto
+  g.save();
+  g.strokeStyle = color; g.lineWidth = 5 + pulse * 3;
+  g.shadowColor = color; g.shadowBlur = 18;
+  rrect(g, b.x - 10, b.y - 10, b.w + 20, b.h + 20, 16); g.stroke();
+  g.restore();
+  // Línea desde la mano del profesor
+  const hx = guide.x + 27, hy = guide.y - 112;
+  const tx = b.x + b.w / 2, ty = b.y + b.h / 2;
+  g.save();
+  g.strokeStyle = color; g.lineWidth = 3; g.setLineDash([12, 10]); g.lineDashOffset = -now * 40;
+  g.beginPath(); g.moveTo(hx, hy); g.lineTo(tx, ty); g.stroke();
+  g.restore();
+  const ang = Math.atan2(ty - hy, tx - hx);
+  g.save(); g.translate(tx - Math.cos(ang) * 14, ty - Math.sin(ang) * 14); g.rotate(ang);
+  g.fillStyle = color; g.beginPath(); g.moveTo(14, 0); g.lineTo(-8, -10); g.lineTo(-8, 10); g.closePath(); g.fill();
+  g.restore();
+  // Etiqueta con la palabra
+  const text = `${l.icon || ''} ${l.word}`;
+  g.font = 'bold 26px system-ui, sans-serif';
+  const w = g.measureText(text).width + 30;
+  const lx = tx, ly = b.y - 34;
+  g.fillStyle = color; rrect(g, lx - w / 2, ly - 22, w, 40, 20); g.fill();
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, lx, ly - 1);
+}
+
+function drawBubbles(g) {
+  g.font = '600 20px system-ui, sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  bubbles.forEach(bb => {
+    const who = bb.who;
+    const x = who.x, y = who.y - HUMAN_H * 1.3 - 40;
+    const lines = wrap(g, bb.text, 330);
+    const w = Math.max(...lines.map(s => g.measureText(s).width)) + 28, h = lines.length * 24 + 16;
+    g.globalAlpha = Math.min(1, bb.t * 2);
+    g.fillStyle = '#ffffff'; g.strokeStyle = '#2a2a2a'; g.lineWidth = 2.5;
+    rrect(g, x - w / 2, y - h, w, h, 14); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(x - 8, y - 1); g.lineTo(x, y + 14); g.lineTo(x + 8, y - 1); g.fill();
+    g.fillStyle = '#1f2421';
+    lines.forEach((s, i) => g.fillText(s, x, y - h + 20 + i * 24));
+    g.globalAlpha = 1;
+  });
+}
+
+function wrap(g, text, maxW) {
+  const words = text.split(' '), lines = [];
+  let cur = '';
+  words.forEach(wd => { const t = cur ? cur + ' ' + wd : wd; if (g.measureText(t).width > maxW && cur) { lines.push(cur); cur = wd; } else cur = t; });
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+function minimapRect(Wc, Hc, dpr) {
+  const w = Math.min(230 * dpr, Wc * 0.4), h = w * (BOTTOM_Y - TOP_Y + 300) / WORLD_W;
+  return { x: Wc - w - 12 * dpr, y: Hc - h - (Wc < 700 * dpr ? 12 * dpr : 16 * dpr) - (Wc < 700 * dpr ? 0 : 0), w, h };
+}
+
+function drawMinimap(Wc, Hc, dpr) {
+  if (Wc < 700 * dpr) return;
+  const g = ctx;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const m = minimapRect(Wc, Hc, dpr);
+  const sx = m.w / WORLD_W, y0 = TOP_Y - 300;
+  const X = x => m.x + x * sx, Y = y => m.y + (y - y0) * sx;
+  g.fillStyle = 'rgba(20,24,22,0.6)'; rrect(g, m.x - 4, m.y - 4, m.w + 8, m.h + 8, 8); g.fill();
+  g.fillStyle = '#5f8f55'; g.fillRect(m.x, m.y, m.w, m.h);
+  g.fillStyle = '#555';
+  for (let r = 0; r < ROWS; r++) g.fillRect(m.x, Y(rowBase(r) + ROAD[0]), m.w, (ROAD[1] - ROAD[0]) * sx);
+  vstreets.forEach(v => g.fillRect(X(v.x0), Y(rowBase(0) + ROAD[0]), VS_W * sx, (rowBase(ROWS - 1) - rowBase(0) + ROAD[1] - ROAD[0]) * sx));
+  W.parks.forEach(p => { g.fillStyle = '#8fce7a'; g.fillRect(X(p.x0), Y(p.y0), (p.x1 - p.x0) * sx, (p.y1 - p.y0) * sx); });
+  W.buildings.forEach(b => { g.fillStyle = b.shop ? '#f6c667' : '#e9d8a6'; g.fillRect(X(b.x0), Y(b.base - 380), (b.x1 - b.x0) * sx, 380 * sx); });
+  W.cars.forEach(c => { g.fillStyle = '#7ec8ff'; g.fillRect(X(c.x) - 2, Y(c.y) - 2, 4, 4); });
+  if (mission && !mission.done && mission.t > 10 && mission.target) {
+    const t = mission.target();
+    if (t) { g.fillStyle = '#ffd400'; g.font = `${14 * dpr}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('★', X(t.x), Y(t.y)); }
+  }
+  g.fillStyle = '#ff4d6d'; g.beginPath(); g.arc(X(player.x), Y(player.y), 4 * dpr, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = '#fff'; g.lineWidth = 1.5 * dpr; g.stroke();
+}
+
+/* =========================================================
+   Inicio, entrada y bucle
+   ========================================================= */
+function newWorld(seed, announce) {
+  W = genWorld(seed);
+  history.replaceState(null, '', '#seed=' + encodeURIComponent(seed));
+  const start = W.buildings[Math.floor(W.buildings.length / 2)];
+  const px = start ? start.doorX : 900, py = start ? start.base + 95 : 100;
+  player = { h: makeHuman(`${seed}:jugador`, ['de pie']), x: px, y: py, moving: false, target: null };
+  guide = { h: makeHuman('english-teacher', ['de pie', 'saludo'], { hair: 'corto', glasses: 'redondas', beard: 'ninguna', top: 'suéter', bottom: 'pantalón', randomColors: false, skinColor: '#c68642', hairColor: '#2a2f4a', topColor: '#2f7d4f', bottomColor: '#34495e', smile: 0.8 }), x: px - 70, y: py - 12, pointT: 0 };
+  cam.x = px; cam.y = py - 120;
+  lesson = null; bubbles = []; lastLessonEnd = now;
+  $('lesson').classList.add('hidden');
+  missionIdx = 0;
+  startMission();
+  if (announce) {
+    const t = { 'día': 'It is a sunny day.', 'atardecer': 'It is evening.', 'noche': 'It is night.' }[W.time];
+    const tEs = { 'día': 'Es un día soleado.', 'atardecer': 'Es la tarde.', 'noche': 'Es de noche.' }[W.time];
+    teachFree(L.free('noun', 'town', 'pueblo', `Welcome to a new town! ${t}`, `¡Bienvenido a un pueblo nuevo! ${tEs}`, '🌎'));
+  }
+}
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(window.innerWidth * dpr);
+  canvas.height = Math.round(window.innerHeight * dpr);
+}
+
+let lastT = performance.now();
+function frame(t) {
+  const dt = Math.min(0.05, (t - lastT) / 1000);
+  lastT = t;
+  if (W) { update(dt); render(); }
+  requestAnimationFrame(frame);
+}
+
+function toast(msg) {
+  const el = $('toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+function begin() {
+  if (started) return;
+  started = true;
+  $('help').classList.add('hidden');
+  Voice.pick();
+  const hello = L.free('noun', 'hello', 'hola', "Hello! I'm your teacher. Let's learn English together!", '¡Hola! Soy tu profesor. ¡Aprendamos inglés juntos!', '👋');
+  teachFree(hello);
+  setTimeout(() => { if (mission) Voice.speak(mission.en); }, 4200);
+  canvas.focus();
+}
+
+function toggleNotebook(show) {
+  const nb = $('notebook');
+  const open = show ?? nb.classList.contains('hidden');
+  nb.classList.toggle('hidden', !open);
+  if (!open) return;
+  const entries = Object.values(progress.words);
+  $('nbSummary').textContent = `${entries.length} palabras aprendidas · ⭐ ${progress.stars} misiones completadas. Toca una palabra para escucharla.`;
+  const list = $('nbList');
+  list.innerHTML = '';
+  Object.entries(CATS).forEach(([k, c]) => {
+    const items = entries.filter(e => e.cat === k).sort((a, b) => a.word.localeCompare(b.word));
+    if (!items.length) return;
+    const h = document.createElement('h3');
+    h.textContent = `${c.name} · ${c.es} (${items.length})`;
+    h.style.color = c.color;
+    list.appendChild(h);
+    items.forEach(e => {
+      const d = document.createElement('div');
+      d.className = 'it';
+      d.innerHTML = `<b></b><span></span>`;
+      d.querySelector('b').textContent = `🔊 ${e.word}`;
+      d.querySelector('span').textContent = `${e.wordEs} — ${e.en}`;
+      d.addEventListener('click', ev => { ev.stopPropagation(); Voice.speak(`${e.word}. ${e.en}`); });
+      list.appendChild(d);
+    });
+  });
+}
+
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ShiftLeft: 'shift', ShiftRight: 'shift' };
+document.addEventListener('keydown', e => {
+  if (!started) { e.preventDefault(); begin(); return; }
+  if (KEYMAP[e.code]) { keys[KEYMAP[e.code]] = true; e.preventDefault(); return; }
+  if (e.repeat) return;
+  const k = e.code;
+  if (k === 'KeyE') askNearest();
+  else if (k === 'KeyR' || k === 'Space') { e.preventDefault(); if (lastSpoken) Voice.speak(lastSpoken); }
+  else if (k === 'KeyL') { settings.slow = !settings.slow; toast(settings.slow ? '🐢 Voz lenta' : '🐇 Voz normal'); if (lastSpoken) Voice.speak(lastSpoken); }
+  else if (k === 'KeyT') { settings.auto = !settings.auto; toast(settings.auto ? 'El profesor enseña solo: sí' : 'El profesor enseña solo: no (usa E)'); }
+  else if (k === 'KeyN') { startMission(); Voice.speak(mission.en); }
+  else if (k === 'KeyV') toggleNotebook();
+  else if (k === 'KeyH' || e.key === '?') { $('help').classList.toggle('hidden'); }
+  else if (e.key === '+' || k === 'Equal' || k === 'NumpadAdd') cam.zoom = Math.min(2.2, cam.zoom * 1.15);
+  else if (e.key === '-' || k === 'Minus' || k === 'NumpadSubtract') cam.zoom = Math.max(0.4, cam.zoom / 1.15);
+  else if (k === 'Escape') { toggleNotebook(false); $('help').classList.add('hidden'); }
+});
+document.addEventListener('keyup', e => { if (KEYMAP[e.code]) keys[KEYMAP[e.code]] = false; });
+window.addEventListener('blur', () => Object.keys(keys).forEach(k => keys[k] = false));
+
+function screenToWorld(ev) {
+  const dpr = window.devicePixelRatio || 1;
+  const Wc = canvas.width, Hc = canvas.height;
+  const scale = Hc / VIEW_H * cam.zoom * Math.max(1, Math.min(1.25, (Wc / Hc) / 1.4));
+  return { x: (ev.clientX * dpr - Wc / 2) / scale + cam.x, y: (ev.clientY * dpr - Hc / 2) / scale + cam.y, px: ev.clientX * dpr, py: ev.clientY * dpr };
+}
+
+let pointerDown = false;
+canvas.addEventListener('pointerdown', ev => {
+  if (!started) { begin(); return; }
+  canvas.focus();
+  pointerDown = true;
+  const p = screenToWorld(ev);
+  // Minimapa: saltar
+  const dpr = window.devicePixelRatio || 1, m = minimapRect(canvas.width, canvas.height, dpr);
+  if (canvas.width >= 700 * dpr && p.px > m.x && p.px < m.x + m.w && p.py > m.y && p.py < m.y + m.h) {
+    const wx = (p.px - m.x) / (m.w / WORLD_W), wy = (p.py - m.y) / (m.w / WORLD_W) + TOP_Y - 300;
+    if (!blocked(wx, wy)) { player.x = wx; player.y = wy; guide.x = wx - 70; guide.y = wy - 12; }
+    pointerDown = false;
+    return;
+  }
+  // ¿Tocó algo que se puede aprender?
+  const hits = W.ents.filter(e => e.lessons && e.kind !== 'park' && (() => { const b = e.box(); return p.x > b.x && p.x < b.x + b.w && p.y > b.y && p.y < b.y + b.h; })())
+    .sort((a, b) => { const A = a.box(), B = b.box(); return A.w * A.h - B.w * B.h; });
+  const hit = hits[0] || W.ents.find(e => e.kind === 'park' && (() => { const b = e.box(); return p.x > b.x && p.x < b.x + b.w && p.y > b.y && p.y < b.y + b.h; })());
+  if (hit) {
+    teach(hit, true);
+    if (hit.kind === 'person') { hit.talkT = 3; hit.pause = 3; }
+    if (hit.kind === 'door' || W.buildings.some(b => b === hit.building)) {
+      const b = hit.building || W.buildings.find(bb => bb.doorX && Math.abs(bb.doorX - hit.x) < 5);
+      if (b && hit.kind === 'door') ringDoor(b);
+    }
+  }
+  const ty = Math.max(TOP_Y, Math.min(BOTTOM_Y, p.y));
+  player.target = { x: p.x, y: hit && hit.box().y + hit.box().h < p.y + 400 ? Math.max(ty, hit.y + 20) : ty };
+});
+canvas.addEventListener('pointermove', ev => {
+  if (!pointerDown || !started) return;
+  const p = screenToWorld(ev);
+  player.target = { x: p.x, y: Math.max(TOP_Y, Math.min(BOTTOM_Y, p.y)) };
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(t => canvas.addEventListener(t, () => { pointerDown = false; }));
+canvas.addEventListener('wheel', ev => { ev.preventDefault(); cam.zoom = Math.max(0.4, Math.min(2.2, cam.zoom * (ev.deltaY < 0 ? 1.1 : 1 / 1.1))); }, { passive: false });
+
+function ringDoor(b) {
+  if (!b.resident) b.resident = makeHuman(`${W.seed}:residente:${b.num}`, ['saludo']);
+  b.ring = 5;
+}
+
+$('btnRandom').addEventListener('click', ev => {
+  ev.stopPropagation();
+  if (!started) begin();
+  newWorld(Gen.randomSeed(), true);
+  toast('🎲 ¡Pueblo nuevo!');
+  canvas.focus();
+});
+$('lesson').addEventListener('click', ev => {
+  if (ev.target.id === 'lWord' && lesson) Voice.speak(lesson.word, 0.6);
+  else if (lastSpoken || lesson) Voice.speak(lesson ? lesson.en : lastSpoken);
+  if (lesson) lesson.t = Math.min(lesson.t, 2);
+});
+$('where').addEventListener('click', () => { const w = whereState.text; if (w) Voice.speak(`You are ${w.en}.`); });
+let pressT = null;
+$('mission').addEventListener('pointerdown', () => { pressT = setTimeout(() => { pressT = 'long'; startMission(); Voice.speak(mission.en); toast('🎯 Nueva misión'); }, 650); });
+$('mission').addEventListener('pointerup', () => {
+  if (pressT === 'long') { pressT = null; return; }
+  clearTimeout(pressT); pressT = null;
+  if (mission) Voice.speak(mission.done ? 'Great job!' : mission.en);
+});
+$('stats').addEventListener('click', () => toggleNotebook(true));
+$('title').addEventListener('click', () => $('help').classList.remove('hidden'));
+$('help').addEventListener('pointerdown', ev => { if (!started) begin(); else if (ev.target === $('help')) $('help').classList.add('hidden'); else $('help').classList.add('hidden'); });
+$('notebook').addEventListener('pointerdown', ev => { if (ev.target === $('notebook')) toggleNotebook(false); });
+$('helpCats').innerHTML = Object.values(CATS).map(c => `<span style="background:${c.color}">${c.name} · ${c.es}</span>`).join('');
+
+window.addEventListener('resize', resize);
+resize();
+updateStats();
+const seed0 = new URLSearchParams(location.hash.slice(1)).get('seed') || Gen.randomSeed();
+newWorld(seed0, false);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

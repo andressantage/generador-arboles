@@ -142,8 +142,10 @@ const Casa = (() => {
     }
 
     // 3. Chimenea (detrás del techo)
+    let chimneyX = null;
     if (hasChimney) {
       const chX = cx + W * R.range(0.12, 0.3) * (R.chance(0.5) ? 1 : -1);
+      chimneyX = chX;
       const smoke = Array.from({ length: 5 }, (_, i) => [chX + 20 + i * 14 + R.sym(8), -i * 34 + R.sym(6), 14 + i * 5]);
       parts.push(ctx => {
         const top = wallTop - rh * 0.95;
@@ -416,7 +418,16 @@ const Casa = (() => {
       });
     }
 
-    parts.geo = { x0, x1: x1 + gW, groundY, top: wallTop - rh - 160, windows, door: { x: dX, y: dY, w: dW, h: dH } };
+    const roofPeak = roofType === 'plano' ? wallTop - 34 : roofType === 'dos aguas' ? wallTop - rh
+      : wallTop - rh * (roofType === 'cuatro aguas' ? 0.75 : 0.85);
+    parts.geo = {
+      x0, x1: x1 + gW, groundY, top: wallTop - rh - 160, windows,
+      // Datos descriptivos (usados por mundo_ingles.html para enseñar vocabulario)
+      houseX0: x0, houseX1: x1, cx, wallTop, roofPeak, roofType, floors, wall, roof, door: { x: dX, y: dY, w: dW, h: dH, color: door },
+      chimney: chimneyX === null ? null : { x: chimneyX, y: wallTop - rh * 0.95 - 12, w: 56, h: rh * 0.5 },
+      garage: hasGarage ? { x: x1, y: groundY - Math.min(floorH * 1.05, floors * floorH) - 22, w: gW + 18, h: Math.min(floorH * 1.05, floors * floorH) + 22 } : null,
+      texture, time
+    };
     build.info = `${floors} piso${floors > 1 ? 's' : ''} · techo ${roofType} · ${time}`;
     return parts;
   }

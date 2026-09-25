@@ -501,6 +501,7 @@ const Rostro = (() => {
     }
 
     build.info = `${shapeName} · pelo ${hairStyle}`;
+    parts.geo = { shapeName, hairStyle, beard, glasses, freckles, smile, skin, hair, eyeColor };
     return parts;
   }
 
