@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mundo generado</title>
+<meta name="description" content="Un barrio procedural con 9 casas, carretera, carros, personas, rostros en las ventanas y árboles fractales, que puedes recorrer.">
+<link rel="stylesheet" href="comun.css">
+<style>
+  body.full { grid-template-columns: 1fr; }
+  body.full aside { display: none; }
+  @media (max-width: 760px) { body.full main { height: 100vh; } }
+  main canvas { touch-action: none; outline: none; }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .keys { font-size: 12px; color: var(--muted); display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
+  .keys b { color: var(--text); font-weight: 600; white-space: nowrap; }
+  #toggle { position: absolute; left: 12px; top: 12px; padding: 6px 10px; }
+  #pad {
+    position: absolute; right: 12px; bottom: 12px; display: none;
+    grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(3, 54px); gap: 6px;
+  }
+  #pad button { font-size: 20px; padding: 0; opacity: .88; user-select: none; -webkit-user-select: none; }
+  #pad .act { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 700; font-size: 15px; }
+  @media (pointer: coarse) { #pad { display: grid; } }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Mundo generado <small>Casas, carros, personas y árboles juntos</small></h1>
+  <nav class="nav" id="nav"></nav>
+  <button class="primary" id="btnNew">🌍 Generar otro mundo</button>
+
+  <fieldset>
+    <legend>Semilla</legend>
+    <div class="seed">
+      <input type="text" id="seed" spellcheck="false" aria-label="Semilla">
+      <button id="btnRedraw" title="Volver a generar con esta semilla">↻</button>
+    </div>
+    <span class="hint">La misma semilla y ajustes producen siempre el mismo mundo.</span>
+  </fieldset>
+
+  <fieldset>
+    <legend>Mundo</legend>
+    <label>Momento del día
+      <select id="time">
+        <option value="aleatorio">aleatorio</option><option value="día">día</option>
+        <option value="atardecer">atardecer</option><option value="noche">noche</option>
+      </select>
+    </label>
+    <label><span class="row">Carros <output id="carsOut"></output></span>
+      <input type="range" id="cars" min="0" max="16" step="1"></label>
+    <label><span class="row">Personas <output id="peopleOut"></output></span>
+      <input type="range" id="people" min="0" max="40" step="1"></label>
+    <label><span class="row">Rostros en las ventanas <output id="facesOut"></output></span>
+      <input type="range" id="faces" min="0" max="1" step="0.05"></label>
+    <label><span class="row">Árboles entre casas <output id="treesOut"></output></span>
+      <input type="range" id="trees" min="0" max="4" step="1"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Aleatorizar por partes</legend>
+    <div class="btns">
+      <button data-roll="rh">🔀 Casas</button>
+      <button data-roll="rc">🔀 Carros</button>
+      <button data-roll="rp">🔀 Personas</button>
+      <button data-roll="rt">🔀 Árboles</button>
+    </div>
+    <button data-roll="rj">🔀 Mi personaje</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>Cómo moverse</legend>
+    <div class="keys">
+      <b>← → ↑ ↓ / WASD</b><span>Caminar por el barrio</span>
+      <b>Shift</b><span>Correr (o acelerar el carro)</span>
+      <b>E</b><span>Saludar a alguien o tocar el timbre</span>
+      <b>C</b><span>Subir o bajar de tu carro</span>
+      <b>+ / − / rueda</b><span>Acercar o alejar</span>
+      <b>Clic / toque</b><span>Caminar hasta ese punto</span>
+      <b>Minimapa</b><span>Clic para saltar a esa zona</span>
+    </div>
+  </fieldset>
+
+  <div class="actions">
+    <button id="btnPng">⬇ Captura PNG</button>
+    <button id="btnLink">🔗 Copiar enlace</button>
+  </div>
+</aside>
+
+<main>
+  <canvas id="canvas" tabindex="0" aria-label="Mundo generado; usa las flechas para moverte"></canvas>
+  <button id="toggle" title="Mostrar u ocultar el panel">☰</button>
+  <div id="pad">
+    <button class="act" data-act="e">E</button><button data-key="up">▲</button><button class="act" data-act="c">C</button>
+    <button data-key="left">◀</button><button data-key="shift">⚡</button><button data-key="right">▶</button>
+    <span></span><button data-key="down">▼</button><span></span>
+  </div>
+  <div id="toast"></div>
+</main>
+
+<script src="comun.js"></script>
+<script src="rostro.js"></script>
+<script src="carro.js"></script>
+<script src="casa.js"></script>
+<script src="humano.js"></script>
+<script>
+'use strict';
+
+const $ = id => document.getElementById(id);
+const canvas = $('canvas');
+const ctx = canvas.getContext('2d');
+
+/* ---------- Constantes del barrio (unidades del mundo) ---------- */
+
+const N_HOUSES = 9, LOT_W = 1150, FIRST = 900;
+const WORLD_W = FIRST * 2 + (N_HOUSES - 1) * LOT_W;
+const Y = { sideA: 70, curb: 120, road2: 380, sideB: 432, lane1: 238, lane2: 352 };
+const CAR_SCALE = 0.26, HUMAN_H = 100, VIEW_H = 1450;
+const SKIES = {
+  'día':       { top: '#5fa8d3', bottom: '#cfe8f5', grass: '#7cb461', far: '#9cc3d8', near: '#6fa860', sidewalk: '#d3cdc2', road: '#56575c' },
+  'atardecer': { top: '#6a4c93', bottom: '#f6a55c', grass: '#6b8f4e', far: '#b98497', near: '#5d7d45', sidewalk: '#c9b8a6', road: '#4f4a52' },
+  'noche':     { top: '#0b1320', bottom: '#243b55', grass: '#24402a', far: '#1d2e45', near: '#1b3322', sidewalk: '#5b5f66', road: '#2a2b30' }
+};
+const GREETINGS = ['¡Hola!', '¡Buenos días!', '¿Qué tal?', '¡Bonito día!', '¡Saludos, vecino!', '¡Hola, bienvenido al barrio!',
+  '¿Has visto mi gato?', '¡Qué buen clima!', '¡Nos vemos!', 'Voy a la tienda.'];
+const CONTROL_IDS = ['time', 'cars', 'people', 'faces', 'trees'];
+const ROLLS = ['rh', 'rc', 'rp', 'rt', 'rj'];
+
+let params = {};
+let world = null;
+let player = null;
+const cam = { x: 700, y: -130, zoom: 1 };
+const keys = {};
+let bubbles = [];
+let lastT = performance.now();
+
+/* ---------- Parámetros y URL ---------- */
+
+function readParams() {
+  const p = { seed: $('seed').value.trim() || '0' };
+  p.time = $('time').value;
+  ['cars', 'people', 'trees'].forEach(k => p[k] = parseInt($(k).value, 10));
+  p.faces = parseFloat($('faces').value);
+  ROLLS.forEach(k => p[k] = params[k] || 0);
+  return p;
+}
+
+function writeParams(p) {
+  if (p.seed !== undefined) $('seed').value = p.seed;
+  CONTROL_IDS.forEach(k => { if (p[k] !== undefined) $(k).value = p[k]; });
+  ROLLS.forEach(k => { if (p[k] !== undefined) params[k] = p[k]; });
+}
+
+function updateOutputs() {
+  $('carsOut').textContent = $('cars').value;
+  $('peopleOut').textContent = $('people').value;
+  $('facesOut').textContent = Math.round($('faces').value * 100) + ' %';
+  $('treesOut').textContent = $('trees').value;
+}
+
+function serialize(p) {
+  const q = new URLSearchParams();
+  q.set('seed', p.seed);
+  [...CONTROL_IDS, ...ROLLS].forEach(k => q.set(k, p[k]));
+  return q.toString();
+}
+
+function deserialize(hash) {
+  const q = new URLSearchParams(hash.replace(/^#/, ''));
+  if (!q.has('seed')) return null;
+  const p = { seed: q.get('seed') };
+  if (['aleatorio', 'día', 'atardecer', 'noche'].includes(q.get('time'))) p.time = q.get('time');
+  ['cars', 'people', 'faces', 'trees', ...ROLLS].forEach(k => {
+    if (q.has(k) && !isNaN(parseFloat(q.get(k)))) p[k] = parseFloat(q.get(k));
+  });
+  return p;
+}
+
+/* ---------- Generación del mundo ---------- */
+
+const noBg = parts => { const g = parts.geo; const out = parts.filter(q => !q.bg); out.geo = g; return out; };
+
+function makeTreeSprite(R, len, leafColors) {
+  const depth = 8;
+  const tr = Casa.fractalTree(R, 0, 0, len, depth);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const ext = (x, y, r) => {
+    minX = Math.min(minX, x - r); maxX = Math.max(maxX, x + r);
+    minY = Math.min(minY, y - r); maxY = Math.max(maxY, y + r);
+  };
+  tr.levels.forEach(seg => { for (let j = 0; j < seg.length; j += 2) ext(seg[j], seg[j + 1], 10); });
+  for (let j = 0; j < tr.leaves.length; j += 4) ext(tr.leaves[j], tr.leaves[j + 1], tr.leaves[j + 2]);
+  const res = 1.3;
+  const c = document.createElement('canvas');
+  c.width = Math.ceil((maxX - minX) * res);
+  c.height = Math.ceil((maxY - minY) * res);
+  const g = c.getContext('2d');
+  g.scale(res, res);
+  g.translate(-minX, -minY);
+  g.lineCap = 'round';
+  tr.levels.forEach((seg, i) => {
+    g.strokeStyle = Gen.mix('#4a3222', '#6b5a3a', i / depth);
+    g.lineWidth = Math.max(1, 16 * Math.pow(0.68, i));
+    g.beginPath();
+    for (let j = 0; j < seg.length; j += 4) { g.moveTo(seg[j], seg[j + 1]); g.lineTo(seg[j + 2], seg[j + 3]); }
+    g.stroke();
+  });
+  leafColors.forEach((col, k) => {
+    g.fillStyle = col;
+    g.beginPath();
+    for (let j = 0; j < tr.leaves.length; j += 4) {
+      if (tr.leaves[j + 3] !== k) continue;
+      g.moveTo(tr.leaves[j] + tr.leaves[j + 2], tr.leaves[j + 1]);
+      g.arc(tr.leaves[j], tr.leaves[j + 1], tr.leaves[j + 2], 0, Math.PI * 2);
+    }
+    g.fill();
+  });
+  return { img: c, ox: minX, oy: minY, w: maxX - minX, h: maxY - minY };
+}
+
+function makeHuman(seed, pose, extra = {}) {
+  const base = { ...Humano.config.presets['Aleatorio'], randomColors: true, variation: 0.5, ...extra };
+  const walkP = { ...base, pose: 'caminando', phase: 0 };
+  const idleP = { ...base, pose };
+  return {
+    walkP, idleP,
+    walk: noBg(Humano.build(walkP, Gen.makeRand(seed))),
+    idle: noBg(Humano.build(idleP, Gen.makeRand(seed)))
+  };
+}
+
+function carParams(night) {
+  return { ...Carro.config.presets['Aleatorio'], variation: 0.5, randomColors: true, scene: true, driver: true,
+    skyColor: night ? '#0d1b2a' : '#8ec5ea', spin: 0 };
+}
+
+function genWorld(keepPlayer = true) {
+  updateOutputs();
+  const prevRolls = {};
+  ROLLS.forEach(k => prevRolls[k] = params[k] || 0);
+  params = readParams();
+  ROLLS.forEach(k => params[k] = prevRolls[k]);
+  history.replaceState(null, '', '#' + serialize(params));
+
+  const R = Gen.makeRand(params.seed);
+  const time = params.time === 'aleatorio' ? R.pick(['día', 'día', 'atardecer', 'noche']) : params.time;
+  const sky = SKIES[time];
+  const night = time === 'noche';
+  const leafColors = night ? ['#1f4d2b', '#2a5e34', '#173d22', '#2f6b3a'] :
+    time === 'atardecer' ? ['#c46a2b', '#8a9a3a', '#b5542a', '#6f8a36'] : ['#3f8f3a', '#5aa648', '#2f7a33', '#6cb655'];
+
+  // Casas (con el generador de casas en modo «solo») y rostros en algunas ventanas
+  const RH = Gen.makeRand(`${params.seed}:casas:${params.rh}`);
+  const houses = [];
+  for (let i = 0; i < N_HOUSES; i++) {
+    const hp = {
+      ...Casa.config.presets['Aleatoria'], floors: RH.int(1, 3), width: RH.range(0.85, 1.2), windows: RH.int(2, 4),
+      windowSize: RH.range(0.9, 1.1), roofPitch: RH.range(0.8, 1.3), fence: 'no', trees: 0, time, solo: true
+    };
+    const hseed = `${params.seed}:casa:${params.rh}:${i}`;
+    const parts = noBg(Casa.build(hp, Gen.makeRand(hseed)));
+    const geo = parts.geo;
+    const cx = FIRST + i * LOT_W;
+    const faces = [];
+    geo.windows.forEach((win, k) => {
+      if (!RH.chance(params.faces)) return;
+      const fp = { ...Rostro.config.presets['Aleatorio'], smile: RH.range(-0.2, 0.9) };
+      faces.push({ win, parts: noBg(Rostro.build(fp, Gen.makeRand(`${hseed}:ventana:${k}`))) });
+    });
+    const resident = makeHuman(`${hseed}:residente`, 'saludo');
+    houses.push({
+      n: i + 1, cx, parts, geo, faces, resident, ring: 0,
+      left: cx + geo.x0 - 500, right: cx + geo.x1 - 500,
+      doorX: cx + geo.door.x + geo.door.w / 2 - 500
+    });
+  }
+
+  // Árboles fractales en los espacios entre casas
+  const RT = Gen.makeRand(`${params.seed}:arboles:${params.rt}`);
+  const trees = [];
+  const gaps = [[-700, houses[0].left - 40]];
+  for (let i = 1; i < N_HOUSES; i++) gaps.push([houses[i - 1].right + 40, houses[i].left - 40]);
+  gaps.push([houses[N_HOUSES - 1].right + 40, WORLD_W + 700]);
+  gaps.forEach(([a, b]) => {
+    if (b - a < 120) return;
+    for (let k = 0; k < params.trees; k++) {
+      const x = a + (b - a) * (k + 0.5) / params.trees + RT.sym((b - a) / params.trees * 0.25);
+      trees.push({ x, y: RT.range(-20, 40), sprite: makeTreeSprite(RT, RT.range(120, 175), leafColors) });
+    }
+  });
+
+  // Carros circulando por los dos carriles
+  const RC = Gen.makeRand(`${params.seed}:carros:${params.rc}`);
+  const cars = [];
+  for (let i = 0; i < params.cars; i++) {
+    const p = carParams(night);
+    const parts = noBg(Carro.build(p, Gen.makeRand(`${params.seed}:carro:${params.rc}:${i}`)));
+    const lane = i % 2;
+    cars.push({
+      p, parts, geo: parts.geo, lane, dir: lane === 0 ? 1 : -1,
+      x: (WORLD_W + 1600) * (i + RC.range(0, 0.6)) / Math.max(1, params.cars) - 800,
+      speed: RC.range(150, 280), cur: 0, len: parts.geo.L * CAR_SCALE
+    });
+    cars[i].cur = cars[i].speed;
+  }
+
+  // Personas caminando por las aceras y los jardines
+  const RP = Gen.makeRand(`${params.seed}:personas:${params.rp}`);
+  const people = [];
+  for (let i = 0; i < params.people; i++) {
+    const zone = RP.pick(['A', 'A', 'A', 'B', 'B', 'jardín']);
+    const y = zone === 'A' ? RP.range(80, 116) : zone === 'B' ? RP.range(392, 428) : RP.range(12, 55);
+    const h = makeHuman(`${params.seed}:persona:${params.rp}:${i}`, RP.pick(['de pie', 'de pie', 'saludo', 'manos en cintura']));
+    people.push({
+      ...h, x: RP.range(0, WORLD_W), y, dir: RP.chance(0.5) ? 1 : -1, speed: RP.range(35, 75),
+      moving: zone !== 'jardín' && RP.chance(0.8), timer: RP.range(2, 9), pause: 0
+    });
+  }
+
+  // Detalles fijos del paisaje
+  const lamps = [];
+  for (let x = 350; x < WORLD_W; x += 800) lamps.push(x);
+  const crossings = houses.filter((h, i) => i % 3 === 1).map(h => h.doorX);
+  const flowers = Array.from({ length: 900 }, () => [R.range(-1500, WORLD_W + 1500), R.range(Y.sideB + 25, 720),
+    R.pick(['#e63946', '#ffb703', '#f28482', '#ffffff', '#b388eb'])]);
+  const clouds = Array.from({ length: 16 }, () => [R.range(0, 6000), R.range(-1100, -650), R.range(0.8, 1.8)]);
+  const stars = Array.from({ length: 160 }, () => [R(), R() * 0.75, R.range(0.6, 1.8)]);
+  const hillSeed = [R.range(0, 10), R.range(0, 10), R.range(0, 10)];
+
+  world = { time, sky, night, houses, trees, cars, people, lamps, crossings, flowers, clouds, stars, hillSeed, leafColors };
+  makePlayer(keepPlayer);
+}
+
+function makePlayer(keep) {
+  const s = `${params.seed}:jugador:${params.rj}`;
+  const h = makeHuman(s, 'de pie');
+  const carP = carParams(world.night);
+  const carParts = noBg(Carro.build(carP, Gen.makeRand(`${s}:carro`)));
+  const old = player;
+  player = {
+    ...h, carP, carParts, x: 700, y: 100, dir: 1, moving: false, inCar: false, target: null, run: false
+  };
+  if (keep && old) Object.assign(player, { x: old.x, y: old.y, dir: old.dir, inCar: old.inCar });
+}
+
+/* ---------- Simulación ---------- */
+
+function inputDir() {
+  const dx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  const dy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+  return [dx, dy];
+}
+
+function update(dt) {
+  const pl = player;
+  let [dx, dy] = inputDir();
+  if (dx || dy) pl.target = null;
+  if (pl.target) {
+    const ex = pl.target.x - pl.x, ey = pl.target.y - pl.y;
+    dx = Math.abs(ex) > 10 ? Math.sign(ex) : 0;
+    dy = Math.abs(ey) > 6 ? Math.sign(ey) : 0;
+    if (!dx && !dy) pl.target = null;
+  }
+  const run = keys.shift ? 2 : 1;
+  const vx = (pl.inCar ? 480 : 230) * run, vy = pl.inCar ? 200 : 150;
+  pl.x = Math.max(-600, Math.min(WORLD_W + 600, pl.x + dx * vx * dt));
+  pl.y = pl.inCar ? Math.max(Y.curb + 95, Math.min(Y.road2 - 12, pl.y + dy * vy * dt))
+                  : Math.max(8, Math.min(700, pl.y + dy * vy * dt));
+  pl.moving = !!(dx || dy);
+  if (dx) pl.dir = dx;
+  if (pl.moving && !pl.inCar) pl.walkP.phase += dt * 9 * run;
+  if (pl.inCar) pl.carP.spin += Math.abs(dx) * vx * dt / (CAR_SCALE * pl.carParts.geo.r);
+
+  // Carros: siguen al de adelante y frenan si alguien cruza
+  world.cars.forEach(car => {
+    const laneY = car.lane === 0 ? Y.lane1 : Y.lane2;
+    let target = car.speed;
+    world.cars.forEach(o => {
+      if (o === car || o.lane !== car.lane) return;
+      const gap = (o.x - car.x) * car.dir;
+      const need = (o.len + car.len) / 2 + 70;
+      if (gap > 0 && gap < need * 1.6) target = Math.min(target, gap < need ? 0 : o.cur * 0.9);
+    });
+    [pl, ...world.people].forEach(b => {
+      const driving = b === pl && pl.inCar;
+      if (driving ? Math.abs(b.y - laneY) > 60 : (b.y < laneY - 110 || b.y > laneY + 20)) return;
+      const gap = (b.x - car.x) * car.dir;
+      const need = car.len / 2 + (driving ? pl.carParts.geo.L * CAR_SCALE / 2 + 40 : 40);
+      if (gap > 0 && gap < need + 140) target = 0;
+      if (gap > 0 && gap < need) car.cur = 0;
+    });
+    car.cur += (target - car.cur) * Math.min(1, dt * (target < car.cur ? 6 : 1.5));
+    car.x += car.dir * car.cur * dt;
+    if (car.x > WORLD_W + 900) car.x = -900;
+    if (car.x < -900) car.x = WORLD_W + 900;
+    car.p.spin += car.cur * dt / (CAR_SCALE * car.geo.r);
+  });
+
+  // Personas: caminan, se detienen de vez en cuando y dan la vuelta
+  world.people.forEach(n => {
+    if (n.pause > 0) { n.pause -= dt; return; }
+    n.timer -= dt;
+    if (n.timer < 0) {
+      n.timer = 2 + Math.random() * 7;
+      if (Math.random() < 0.35) n.moving = !n.moving;
+      if (Math.random() < 0.4) n.dir *= -1;
+    }
+    if (!n.moving) return;
+    n.x += n.dir * n.speed * dt;
+    if (n.x < -300 || n.x > WORLD_W + 300) n.dir *= -1;
+    n.walkP.phase += dt * n.speed * 0.13;
+  });
+
+  world.houses.forEach(h => { if (h.ring > 0) h.ring -= dt; });
+  bubbles = bubbles.filter(b => (b.t -= dt) > 0);
+
+  // Cámara
+  const tx = pl.x, ty = Math.max(-420, Math.min(-60, pl.y - 260));
+  cam.x += (tx - cam.x) * Math.min(1, dt * 4);
+  cam.y += (ty - cam.y) * Math.min(1, dt * 3);
+}
+
+function nearestHouse() {
+  if (player.inCar || player.y > Y.curb + 20) return null;
+  return world.houses.find(h => Math.abs(player.x - h.doorX) < 80) || null;
+}
+
+function nearestPerson() {
+  let best = null, bd = Infinity;
+  world.people.forEach(n => {
+    const d = Math.hypot(n.x - player.x, (n.y - player.y) * 1.5);
+    if (d < 110 && d < bd) { bd = d; best = n; }
+  });
+  return best;
+}
+
+function actionE() {
+  if (player.inCar) { say(player, '¡Pip, pip! 🚗'); return; }
+  const n = nearestPerson();
+  const h = nearestHouse();
+  if (n && (!h || Math.abs(n.x - player.x) < Math.abs(h.doorX - player.x))) {
+    n.pause = 3.5;
+    say(player, '¡Hola!');
+    setTimeout(() => say(n, GREETINGS[Math.floor(Math.random() * GREETINGS.length)]), 500);
+  } else if (h) {
+    h.ring = 5;
+    say(player, '¡Ding, dong! 🔔');
+    setTimeout(() => say({ house: h }, `¡Hola! Bienvenido a la casa ${h.n}`), 600);
+  } else {
+    say(player, GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
+  }
+}
+
+function actionC() {
+  const pl = player;
+  pl.target = null;
+  if (!pl.inCar) {
+    pl.inCar = true;
+    pl.y = pl.y < (Y.lane1 + Y.lane2) / 2 ? Y.lane1 : Y.lane2;
+    toast('Subiste a tu carro · C para bajar');
+  } else {
+    pl.inCar = false;
+    pl.y = pl.y < (Y.lane1 + Y.lane2) / 2 ? 100 : 410;
+    toast('Bajaste del carro');
+  }
+}
+
+function say(who, text) {
+  bubbles = bubbles.filter(b => b.who !== who);
+  bubbles.push({ who, text, t: 3 });
+}
+
+/* ---------- Dibujo ---------- */
+
+function drawHuman(g, h, x, y, moving) {
+  const p = moving ? h.walkP : h.idleP;
+  const parts = moving ? h.walk : h.idle;
+  const s = HUMAN_H / 820;
+  const bob = moving ? Math.abs(Math.sin(h.walkP.phase)) * 3 : 0;
+  g.save();
+  g.translate(x, y - bob);
+  g.scale(s, s);
+  g.translate(-300, -960);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  parts.forEach(q => q(g));
+  g.restore();
+  return p;
+}
+
+function drawCar(g, parts, x, y, dir) {
+  g.save();
+  g.translate(x, y);
+  g.scale(dir * CAR_SCALE, CAR_SCALE);
+  g.translate(-600, -parts.geo.groundY);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  parts.forEach(q => q(g));
+  g.restore();
+}
+
+function drawHouse(g, h) {
+  g.save();
+  g.translate(h.cx - 500, -h.geo.groundY);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  h.parts.forEach(q => q(g));
+  // Rostros asomados en algunas ventanas
+  h.faces.forEach(({ win, parts }) => {
+    g.save();
+    g.beginPath();
+    if (win.arch) {
+      g.moveTo(win.x, win.y + win.h);
+      g.lineTo(win.x, win.y + win.w / 2);
+      g.arc(win.x + win.w / 2, win.y + win.w / 2, win.w / 2, Math.PI, 0);
+      g.lineTo(win.x + win.w, win.y + win.h);
+    } else g.rect(win.x, win.y, win.w, win.h);
+    g.clip();
+    const s = win.w * 0.85 / 460;
+    g.translate(win.x + win.w / 2, win.y + win.h * 0.62);
+    g.scale(s, s);
+    g.translate(-400, -430);
+    parts.forEach(q => q(g));
+    g.restore();
+  });
+  // Vecino que abre la puerta al tocar el timbre
+  if (h.ring > 0) {
+    const d = h.geo.door;
+    g.save();
+    g.beginPath(); g.rect(d.x, d.y, d.w, d.h); g.clip();
+    g.fillStyle = '#2b2118';
+    g.fillRect(d.x, d.y, d.w, d.h);
+    g.fillStyle = Gen.rgba('#ffd98a', 0.35);
+    g.fillRect(d.x, d.y, d.w, d.h);
+    const s = d.h * 0.95 / 820;
+    g.translate(d.x + d.w / 2, d.y + d.h);
+    g.scale(s, s);
+    g.translate(-300, -960);
+    h.resident.idle.forEach(q => q(g));
+    g.restore();
+  }
+  g.restore();
+}
+
+function drawMailbox(g, h) {
+  const x = h.doorX + 70, y = Y.sideA - 4;
+  g.fillStyle = '#5a4632';
+  g.fillRect(x - 3, y - 48, 6, 48);
+  g.fillStyle = '#2f5d8a';
+  g.beginPath(); Gen.roundedPoly(g, [[x - 18, y - 70], [x + 18, y - 70], [x + 18, y - 46], [x - 18, y - 46]], 6); g.fill();
+  g.fillStyle = '#ffffff';
+  g.font = 'bold 18px system-ui, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(String(h.n), x, y - 57);
+}
+
+function drawLamp(g, x) {
+  const y = Y.curb - 4;
+  if (world.night) {
+    const grd = g.createRadialGradient(x + 30, y - 175, 0, x + 30, y - 175, 170);
+    grd.addColorStop(0, Gen.rgba('#ffe08a', 0.45));
+    grd.addColorStop(1, Gen.rgba('#ffe08a', 0));
+    g.fillStyle = grd;
+    g.fillRect(x - 150, y - 350, 360, 360);
+  }
+  g.strokeStyle = '#3a3f45';
+  g.lineWidth = 7;
+  g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - 180); g.quadraticCurveTo(x, y - 195, x + 25, y - 190); g.stroke();
+  g.fillStyle = world.night ? '#ffe08a' : '#e8e4d8';
+  g.beginPath(); g.ellipse(x + 30, y - 185, 16, 7, 0, 0, Math.PI * 2); g.fill();
+}
+
+function hillPath(g, left, right, base, amp, k, seed) {
+  g.beginPath();
+  g.moveTo(left, base + 10);
+  for (let x = left; x <= right + 40; x += 40) {
+    const h = amp * (0.55 + 0.25 * Math.sin(x / (620 * k) + seed[0]) + 0.15 * Math.sin(x / (260 * k) + seed[1]) +
+      0.08 * Math.sin(x / (110 * k) + seed[2]));
+    g.lineTo(x, base - h);
+  }
+  g.lineTo(right + 40, base + 10);
+  g.closePath();
+}
+
+function render() {
+  const Wc = canvas.width, Hc = canvas.height;
+  const dpr = window.devicePixelRatio || 1;
+  const scale = Hc / VIEW_H * cam.zoom;
+  const halfW = Wc / 2 / scale;
+  const left = cam.x - halfW, right = cam.x + halfW;
+  const sky = world.sky;
+  const horizon = (0 - cam.y) * scale + Hc / 2;
+
+  // Cielo en pantalla
+  const g = ctx;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const grd = g.createLinearGradient(0, 0, 0, Math.max(10, horizon));
+  grd.addColorStop(0, sky.top);
+  grd.addColorStop(1, sky.bottom);
+  g.fillStyle = grd;
+  g.fillRect(0, 0, Wc, Hc);
+  if (world.night) {
+    g.fillStyle = '#ffffff';
+    world.stars.forEach(([sx, sy, s]) => { g.globalAlpha = 0.35 + s / 3; g.fillRect(sx * Wc, sy * horizon, s * dpr, s * dpr); });
+    g.globalAlpha = 1;
+  }
+  g.fillStyle = world.night ? '#f4f1de' : world.time === 'día' ? '#fff3b0' : '#ffd07a';
+  g.beginPath();
+  g.arc(Wc * 0.8, world.time === 'atardecer' ? horizon * 0.75 : horizon * 0.25, 38 * dpr * Math.min(1.5, cam.zoom), 0, Math.PI * 2);
+  g.fill();
+
+  // Mundo
+  g.translate(Wc / 2, Hc / 2);
+  g.scale(scale, scale);
+  g.translate(-cam.x, -cam.y);
+
+  // Capas con paralaje: nubes, colinas lejanas y cercanas
+  const layer = (f, draw) => {
+    g.save();
+    g.translate(cam.x * (1 - f), 0);
+    draw(cam.x * f - halfW, cam.x * f + halfW);
+    g.restore();
+  };
+  if (!world.night) {
+    layer(0.12, (l, r) => {
+      g.fillStyle = Gen.rgba('#ffffff', world.time === 'día' ? 0.85 : 0.45);
+      world.clouds.forEach(([cx, cy, s]) => {
+        const period = 6000;
+        const base = cx + Math.floor((l - cx) / period) * period;
+        for (let x = base; x < r + 300; x += period) {
+          if (x < l - 300) continue;
+          g.beginPath();
+          [[0, 0, 60], [65, -25, 72], [135, 0, 56], [68, 18, 62]].forEach(([dx, dy, rr]) => {
+            g.moveTo(x + dx * s + rr * s, cy + dy * s);
+            g.arc(x + dx * s, cy + dy * s, rr * s, 0, Math.PI * 2);
+          });
+          g.fill();
+        }
+      });
+    });
+  }
+  layer(0.25, (l, r) => { g.fillStyle = sky.far; hillPath(g, l, r, 0, 520, 1.6, world.hillSeed); g.fill(); });
+  layer(0.5, (l, r) => { g.fillStyle = sky.near; hillPath(g, l, r, 0, 300, 1, world.hillSeed.map(v => v * 2.1)); g.fill(); });
+
+  // Suelo, aceras y carretera
+  const L = left - 50, Wd = right - left + 100;
+  g.fillStyle = sky.grass;
+  g.fillRect(L, 0, Wd, 4000);
+  g.fillStyle = Gen.shade(sky.grass, 0.08);
+  g.fillRect(L, 0, Wd, 12);
+  [[Y.sideA, Y.curb], [Y.road2, Y.sideB]].forEach(([a, b]) => {
+    g.fillStyle = sky.sidewalk;
+    g.fillRect(L, a, Wd, b - a);
+    g.strokeStyle = Gen.rgba('#000000', 0.12);
+    g.lineWidth = 2;
+    g.beginPath();
+    for (let x = Math.floor(L / 70) * 70; x < right + 70; x += 70) { g.moveTo(x, a); g.lineTo(x, b); }
+    g.stroke();
+  });
+  g.fillStyle = sky.road;
+  g.fillRect(L, Y.curb, Wd, Y.road2 - Y.curb);
+  g.fillStyle = Gen.shade(sky.sidewalk, -0.25);
+  g.fillRect(L, Y.curb - 3, Wd, 7);
+  g.fillRect(L, Y.road2 - 4, Wd, 7);
+  g.strokeStyle = Gen.rgba('#ffffff', 0.85);
+  g.lineWidth = 4;
+  g.beginPath(); g.moveTo(L, Y.curb + 12); g.lineTo(right + 50, Y.curb + 12);
+  g.moveTo(L, Y.road2 - 14); g.lineTo(right + 50, Y.road2 - 14); g.stroke();
+  g.strokeStyle = '#f2c94c';
+  g.lineWidth = 6;
+  g.setLineDash([70, 55]);
+  g.beginPath(); g.moveTo(Math.floor(L / 125) * 125, 262); g.lineTo(right + 150, 262); g.stroke();
+  g.setLineDash([]);
+  g.fillStyle = Gen.rgba('#ffffff', 0.85);
+  world.crossings.forEach(x => {
+    if (x < left - 200 || x > right + 200) return;
+    for (let y = Y.curb + 22; y < Y.road2 - 24; y += 34) g.fillRect(x - 70, y, 140, 18);
+  });
+  world.flowers.forEach(([x, y, c]) => {
+    if (x < left - 10 || x > right + 10) return;
+    g.fillStyle = c;
+    g.beginPath(); g.arc(x, y, 4, 0, Math.PI * 2); g.fill();
+  });
+
+  // Entidades ordenadas por profundidad (y de los pies)
+  const ents = [];
+  const visible = (a, b) => b > left - 50 && a < right + 50;
+  world.houses.forEach(h => { if (visible(h.left - 60, h.right + 60)) ents.push([-5, () => drawHouse(g, h)]); });
+  world.houses.forEach(h => { if (visible(h.doorX, h.doorX + 100)) ents.push([Y.sideA - 4, () => drawMailbox(g, h)]); });
+  world.trees.forEach(t => {
+    if (visible(t.x + t.sprite.ox, t.x + t.sprite.ox + t.sprite.w)) ents.push([t.y, () => g.drawImage(t.sprite.img, t.x + t.sprite.ox, t.y + t.sprite.oy, t.sprite.w, t.sprite.h)]);
+  });
+  world.lamps.forEach(x => { if (visible(x - 160, x + 200)) ents.push([Y.curb - 4, () => drawLamp(g, x)]); });
+  world.cars.forEach(c => {
+    if (visible(c.x - c.len, c.x + c.len)) ents.push([c.lane === 0 ? Y.lane1 : Y.lane2, () => drawCar(g, c.parts, c.x, c.lane === 0 ? Y.lane1 : Y.lane2, c.dir)]);
+  });
+  world.people.forEach(n => { if (visible(n.x - 60, n.x + 60)) ents.push([n.y, () => drawHuman(g, n, n.x, n.y, n.moving && n.pause <= 0)]); });
+  ents.push([player.y + 0.1, () => {
+    if (player.inCar) drawCar(g, player.carParts, player.x, player.y, player.dir);
+    else drawHuman(g, player, player.x, player.y, player.moving);
+    const top = player.inCar ? player.y - 90 : player.y - HUMAN_H * 1.2;
+    const bounce = Math.sin(performance.now() / 200) * 5;
+    g.fillStyle = '#ff4d6d';
+    g.beginPath();
+    g.moveTo(player.x - 12, top - 26 + bounce); g.lineTo(player.x + 12, top - 26 + bounce); g.lineTo(player.x, top - 8 + bounce);
+    g.closePath(); g.fill();
+  }]);
+  ents.sort((a, b) => a[0] - b[0]).forEach(e => e[1]());
+
+  // Globos de diálogo
+  g.font = '600 22px system-ui, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  bubbles.forEach(b => {
+    let x, y;
+    if (b.who.house) {
+      const h = b.who.house;
+      x = h.doorX; y = h.geo.door.y - h.geo.groundY - 40;
+    } else if (b.who === player) {
+      x = player.x; y = player.inCar ? player.y - 130 : player.y - HUMAN_H * 1.2 - 45;
+    } else {
+      x = b.who.x; y = b.who.y - HUMAN_H * 1.2 - 15;
+    }
+    const w = g.measureText(b.text).width + 28;
+    g.globalAlpha = Math.min(1, b.t * 2);
+    g.fillStyle = '#ffffff';
+    g.strokeStyle = '#2a2a2a';
+    g.lineWidth = 2.5;
+    g.beginPath();
+    Gen.roundedPoly(g, [[x - w / 2, y - 22], [x + w / 2, y - 22], [x + w / 2, y + 18], [x - w / 2, y + 18]], 14);
+    g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(x - 8, y + 17); g.lineTo(x, y + 32); g.lineTo(x + 8, y + 17); g.fill();
+    g.fillStyle = '#1f2421';
+    g.fillText(b.text, x, y - 2);
+    g.globalAlpha = 1;
+  });
+
+  drawHud(Wc, Hc, dpr);
+}
+
+function minimapRect(Wc, dpr) {
+  const w = Math.min(560 * dpr, Wc * 0.62), h = 30 * dpr;
+  return { x: (Wc - w) / 2, y: 12 * dpr, w, h };
+}
+
+function drawHud(Wc, Hc, dpr) {
+  const g = ctx;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const m = minimapRect(Wc, dpr);
+  const mx = x => m.x + (x + 700) / (WORLD_W + 1400) * m.w;
+  g.fillStyle = 'rgba(20,24,22,0.55)';
+  g.beginPath(); Gen.roundedPoly(g, [[m.x, m.y], [m.x + m.w, m.y], [m.x + m.w, m.y + m.h], [m.x, m.y + m.h]], 8 * dpr); g.fill();
+  g.fillStyle = 'rgba(255,255,255,0.25)';
+  g.fillRect(m.x + 6 * dpr, m.y + m.h * 0.62, m.w - 12 * dpr, m.h * 0.18);
+  world.houses.forEach(h => {
+    g.fillStyle = '#e9d8a6';
+    g.fillRect(mx(h.left), m.y + m.h * 0.2, mx(h.right) - mx(h.left), m.h * 0.38);
+  });
+  world.cars.forEach(c => { g.fillStyle = '#7ec8ff'; g.fillRect(mx(c.x) - 2 * dpr, m.y + m.h * 0.64, 4 * dpr, 4 * dpr); });
+  const scale = Hc / VIEW_H * cam.zoom;
+  const vw = Wc / scale;
+  g.strokeStyle = 'rgba(255,255,255,0.8)';
+  g.lineWidth = 1.5 * dpr;
+  g.strokeRect(mx(cam.x - vw / 2), m.y + 3 * dpr, mx(cam.x + vw / 2) - mx(cam.x - vw / 2), m.h - 6 * dpr);
+  g.fillStyle = '#ff4d6d';
+  g.beginPath(); g.arc(mx(player.x), m.y + m.h / 2, 5 * dpr, 0, Math.PI * 2); g.fill();
+
+  // Indicaciones contextuales
+  const h = nearestHouse(), n = nearestPerson();
+  let hint = player.inCar ? 'En tu carro · C para bajar · Shift para acelerar'
+    : n ? 'E: saludar' : h ? `Casa ${h.n} · E: tocar el timbre` : '';
+  const here = world.houses.find(x => player.x > x.left && player.x < x.right);
+  const title = here ? `Casa ${here.n} de ${N_HOUSES}` : 'Barrio';
+  g.font = `600 ${14 * dpr}px system-ui, sans-serif`;
+  g.textAlign = 'center';
+  g.textBaseline = 'top';
+  g.fillStyle = 'rgba(255,255,255,0.95)';
+  g.shadowColor = 'rgba(0,0,0,0.6)';
+  g.shadowBlur = 4 * dpr;
+  g.fillText(`${title} · ${world.time}`, Wc / 2, m.y + m.h + 8 * dpr);
+  if (hint) g.fillText(hint, Wc / 2, m.y + m.h + 28 * dpr);
+  g.shadowBlur = 0;
+}
+
+/* ---------- Bucle, entrada y UI ---------- */
+
+function frame(now) {
+  const dt = Math.min(0.05, (now - lastT) / 1000);
+  lastT = now;
+  if (world) { update(dt); render(); }
+  requestAnimationFrame(frame);
+}
+
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const r = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(r.width * dpr));
+  canvas.height = Math.max(1, Math.round(r.height * dpr));
+}
+
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => el.classList.remove('show'), 1600);
+}
+
+const KEYMAP = {
+  ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
+  ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ShiftLeft: 'shift', ShiftRight: 'shift'
+};
+
+document.addEventListener('keydown', e => {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (KEYMAP[e.code]) { keys[KEYMAP[e.code]] = true; e.preventDefault(); return; }
+  if (e.repeat) return;
+  if (e.code === 'KeyE') actionE();
+  else if (e.code === 'KeyC') actionC();
+  else if (e.key === '+' || e.code === 'Equal' || e.code === 'NumpadAdd') cam.zoom = Math.min(2.5, cam.zoom * 1.15);
+  else if (e.key === '-' || e.code === 'Minus' || e.code === 'NumpadSubtract') cam.zoom = Math.max(0.45, cam.zoom / 1.15);
+});
+document.addEventListener('keyup', e => { if (KEYMAP[e.code]) keys[KEYMAP[e.code]] = false; });
+window.addEventListener('blur', () => Object.keys(keys).forEach(k => keys[k] = false));
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  cam.zoom = Math.max(0.45, Math.min(2.5, cam.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+}, { passive: false });
+
+canvas.addEventListener('pointerdown', e => {
+  canvas.focus();
+  const dpr = window.devicePixelRatio || 1;
+  const r = canvas.getBoundingClientRect();
+  const px = (e.clientX - r.left) * dpr, py = (e.clientY - r.top) * dpr;
+  const m = minimapRect(canvas.width, dpr);
+  if (px >= m.x && px <= m.x + m.w && py >= m.y && py <= m.y + m.h) {
+    player.x = (px - m.x) / m.w * (WORLD_W + 1400) - 700;
+    player.target = null;
+    cam.x = player.x;
+    return;
+  }
+  const scale = canvas.height / VIEW_H * cam.zoom;
+  const wx = (px - canvas.width / 2) / scale + cam.x;
+  const wy = (py - canvas.height / 2) / scale + cam.y;
+  player.target = { x: wx, y: Math.max(player.inCar ? Y.curb + 95 : 8, Math.min(player.inCar ? Y.road2 - 12 : 700, wy)) };
+});
+
+document.querySelectorAll('#pad [data-key]').forEach(b => {
+  const k = b.dataset.key;
+  const on = e => { e.preventDefault(); keys[k] = true; };
+  const off = () => { keys[k] = false; };
+  b.addEventListener('pointerdown', on);
+  b.addEventListener('pointerup', off);
+  b.addEventListener('pointerleave', off);
+  b.addEventListener('pointercancel', off);
+});
+document.querySelector('#pad [data-act="e"]').addEventListener('click', actionE);
+document.querySelector('#pad [data-act="c"]').addEventListener('click', actionC);
+
+$('toggle').addEventListener('click', () => {
+  document.body.classList.toggle('full');
+  requestAnimationFrame(resizeCanvas);
+  canvas.focus();
+});
+
+$('nav').innerHTML = Gen.navHTML();
+CONTROL_IDS.forEach(id => $(id).addEventListener('input', () => genWorld(true)));
+$('seed').addEventListener('change', () => genWorld(true));
+$('seed').addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); genWorld(true); } });
+$('btnRedraw').addEventListener('click', () => genWorld(true));
+$('btnNew').addEventListener('click', () => { $('seed').value = Gen.randomSeed(); genWorld(true); toast('Nuevo mundo generado'); });
+document.querySelectorAll('[data-roll]').forEach(b => b.addEventListener('click', () => {
+  const k = b.dataset.roll;
+  params[k] = (params[k] || 0) + 1;
+  genWorld(true);
+  canvas.focus();
+}));
+$('btnPng').addEventListener('click', () => {
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `mundo-${params.seed}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+});
+$('btnLink').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(location.href); toast('Enlace copiado'); }
+  catch { toast('No se pudo copiar el enlace'); }
+});
+
+// Inicio
+writeParams({ time: 'aleatorio', cars: 8, people: 16, faces: 0.35, trees: 2 });
+const fromUrl = deserialize(location.hash);
+if (fromUrl) writeParams(fromUrl);
+else $('seed').value = Gen.randomSeed();
+new ResizeObserver(resizeCanvas).observe(canvas);
+resizeCanvas();
+genWorld(false);
+canvas.focus();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
