@@ -52,7 +52,9 @@ const Humano = (() => {
       glasses: p.glasses, freckles: 'aleatorio', randomColors: false, skinColor: skin, hairColor: hair,
       eyeColor: eyes, shirtColor: topColor, bgColor: '#ffffff', soloCabeza: true
     };
-    const headParts = Rostro.build(faceP, R).filter(q => !q.bg);
+    const faceParts = Rostro.build(faceP, R);
+    const faceGeo = faceParts.geo;
+    const headParts = faceParts.filter(q => !q.bg);
 
     const dir = (a, side) => [side * Math.sin(a), Math.cos(a)];
     const seg = (ctx, x1, y1, x2, y2, w, color) => {
@@ -220,7 +222,7 @@ const Humano = (() => {
     });
 
     build.info = `${topType} · ${bottomType} · ${pose}`;
-    parts.geo = { cx, feetY, H };
+    parts.geo = { cx, feetY, H, topType, bottomType, topColor, bottomColor, shoeColor, pose, face: faceGeo, height: p.height };
     return parts;
   }
 

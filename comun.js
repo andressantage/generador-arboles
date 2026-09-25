@@ -21,6 +21,7 @@ const Gen = (() => {
     ['casas.html', 'Casas'],
     ['humanos.html', 'Humanos'],
     ['mundo.html', 'Mundo'],
+    ['mundo_ingles.html', 'Inglés'],
     ['antes_arboles.html', 'Versión anterior']
   ];
 

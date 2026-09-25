@@ -357,7 +357,7 @@ const Carro = (() => {
 
     build.info = `${type} · rines ${rimStyle}`;
     // Datos para componer el carro en otras escenas (mundo.html)
-    parts.geo = { x0, x1, groundY, L, r, night };
+    parts.geo = { x0, x1, groundY, L, r, night, body, type };
     return parts;
   }
 
