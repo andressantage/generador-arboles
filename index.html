@@ -1,64 +1,571 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <style>
-        canvas {
-            display: block;
-        }
-        *{
-            margin:0;
-
-        }
-    </style>
-    <title>Genera arbol</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de árboles</title>
+<meta name="description" content="Generador de árboles fractales recursivos con semilla, animación de crecimiento y exportación a PNG.">
+<style>
+  :root {
+    --bg: #f4f2ee;
+    --panel: #ffffff;
+    --text: #1f2421;
+    --muted: #6b716d;
+    --border: #e2dfd8;
+    --accent: #2f7d4f;
+    --accent-text: #ffffff;
+    --input: #f7f6f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151816;
+      --panel: #1e2320;
+      --text: #e8ebe9;
+      --muted: #9aa39e;
+      --border: #2e3531;
+      --accent: #4caf78;
+      --accent-text: #0e1410;
+      --input: #262c28;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+  aside {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  h1 { font-size: 18px; font-weight: 650; }
+  h1 small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 2px; }
+  fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+  legend { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 0 4px; }
+  label { display: flex; flex-direction: column; gap: 4px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .row output { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=text], select {
+    width: 100%; padding: 6px 8px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--input); color: var(--text); font: inherit;
+  }
+  .colors { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .colors label { flex-direction: row; align-items: center; gap: 8px; font-size: 13px; }
+  input[type=color] { width: 32px; height: 26px; border: 1px solid var(--border); border-radius: 6px; padding: 0; background: none; cursor: pointer; }
+  .check { flex-direction: row; align-items: center; gap: 8px; cursor: pointer; }
+  .check input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .seed { display: flex; gap: 6px; }
+  .seed input { flex: 1; }
+  button {
+    font: inherit; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--input); color: var(--text); padding: 7px 10px; cursor: pointer;
+  }
+  button:hover { filter: brightness(0.96); }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 600; padding: 10px; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .hint { font-size: 12px; color: var(--muted); }
+  main { position: relative; min-width: 0; min-height: 0; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #stats {
+    position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--muted);
+    background: color-mix(in srgb, var(--panel) 80%, transparent); padding: 4px 8px; border-radius: 6px;
+  }
+  #toast {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: var(--bg); padding: 6px 12px; border-radius: 8px;
+    font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  @media (max-width: 760px) {
+    body { grid-template-columns: 1fr; grid-template-rows: 60vh auto; height: auto; overflow: auto; }
+    main { grid-row: 1; height: 60vh; }
+    aside { grid-row: 2; border-right: 0; border-top: 1px solid var(--border); overflow: visible; }
+  }
+</style>
 </head>
 <body>
-    <div class="d-flex justify-content-center">
-        <a href="index.html"><button class="btn btn-success mt-1">Generar otro arbol con IA</button></a>
+<aside>
+  <h1>Generador de árboles <small>Fractal recursivo · Espacio o Enter = árbol nuevo</small></h1>
+
+  <button class="primary" id="btnNew">🌱 Generar otro árbol</button>
+
+  <label>Estilo predefinido
+    <select id="preset"></select>
+  </label>
+
+  <fieldset>
+    <legend>Semilla</legend>
+    <div class="seed">
+      <input type="text" id="seed" spellcheck="false" aria-label="Semilla">
+      <button id="btnRedraw" title="Volver a dibujar con esta semilla">↻</button>
     </div>
-    <div class="d-flex justify-content-center">
-        <canvas id="treeCanvas" width="1000" height="1000"></canvas>
+    <span class="hint">La misma semilla y ajustes producen siempre el mismo árbol.</span>
+  </fieldset>
+
+  <fieldset>
+    <legend>Estructura</legend>
+    <label><span class="row">Profundidad <output id="depthOut"></output></span>
+      <input type="range" id="depth" min="1" max="18" step="1"></label>
+    <label><span class="row">Ramas por nodo <output id="branchesOut"></output></span>
+      <input type="range" id="branches" min="2" max="3" step="1"></label>
+    <label class="check"><input type="checkbox" id="centerPull"> Rama central se endereza (original)</label>
+    <label><span class="row">Apertura <output id="spreadOut"></output></span>
+      <input type="range" id="spread" min="0" max="180" step="1"></label>
+    <label><span class="row">Azar en ángulos <output id="angleRandOut"></output></span>
+      <input type="range" id="angleRand" min="0" max="2" step="0.05"></label>
+    <label><span class="row">Reducción de longitud <output id="shrinkOut"></output></span>
+      <input type="range" id="shrink" min="1.02" max="2" step="0.01"></label>
+    <label><span class="row">Azar en longitud <output id="lenRandOut"></output></span>
+      <input type="range" id="lenRand" min="0" max="1.5" step="0.05"></label>
+    <label><span class="row">Viento / inclinación <output id="windOut"></output></span>
+      <input type="range" id="wind" min="-15" max="15" step="0.5"></label>
+    <label><span class="row">Poda aleatoria <output id="pruneOut"></output></span>
+      <input type="range" id="prune" min="0" max="0.6" step="0.01"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Aspecto</legend>
+    <label><span class="row">Grosor del tronco <output id="trunkWidthOut"></output></span>
+      <input type="range" id="trunkWidth" min="0.5" max="40" step="0.5"></label>
+    <label><span class="row">Adelgazamiento <output id="taperOut"></output></span>
+      <input type="range" id="taper" min="0.4" max="1" step="0.01"></label>
+    <label><span class="row">Tamaño de hojas <output id="leafSizeOut"></output></span>
+      <input type="range" id="leafSize" min="0" max="12" step="0.5"></label>
+    <label><span class="row">Densidad de hojas <output id="leafDensityOut"></output></span>
+      <input type="range" id="leafDensity" min="0" max="1" step="0.05"></label>
+    <div class="colors">
+      <label><input type="color" id="trunkColor"> Tronco</label>
+      <label><input type="color" id="tipColor"> Puntas</label>
+      <label><input type="color" id="leafColor"> Hojas</label>
+      <label><input type="color" id="bgColor"> Fondo</label>
     </div>
-    <script>
-        var pi = Math.PI;
-        function tree(x, y, angle, depth, branch_length, ctx) {
-            if (depth === 0) {
-                return;
-            }
-            
-            let x2 = x + Math.cos(angle*(pi/180)-pi/2) * branch_length;
-            let y2 = y + Math.sin(angle*(pi/180)-pi/2) * branch_length;
-            /* console.log(x2)
-            console.log(y2)
-            console.log(angle*(pi/180)) */
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-        
-            //arboles de rama
-            /* tree(x2, y2, angle - 60 / (1.5 + Math.random() * 2.5), depth - 1, branch_length/(1.2+Math.random()), ctx);
-            tree(x2, y2, angle + 60 / (1.5 + Math.random() * 2.5), depth - 1, branch_length/(1.2+Math.random()), ctx); */
+    <label class="check"><input type="checkbox" id="transparent"> Fondo transparente al exportar</label>
+  </fieldset>
 
-            tree(x2, y2, angle - 60 / (1.5 + Math.random() * 2.5), depth - 1, branch_length/(1.2+Math.random()), ctx);
-            tree(x2, y2, angle + 60 / (1.5 + Math.random() * 2.5), depth - 1, branch_length/(1.2+Math.random()), ctx);
-            tree(x2, y2, angle/ (1.5 + Math.random() * 2.5), depth - 1, branch_length/(1.2+Math.random()), ctx);
-        }
+  <fieldset>
+    <legend>Animación</legend>
+    <label class="check"><input type="checkbox" id="animate"> Animar el crecimiento</label>
+    <label><span class="row">Duración <output id="durationOut"></output></span>
+      <input type="range" id="duration" min="0.3" max="6" step="0.1"></label>
+  </fieldset>
 
-        function drawTree() {
-            const canvas = document.getElementById('treeCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+  <div class="actions">
+    <button id="btnPng">⬇ Descargar PNG</button>
+    <button id="btnLink">🔗 Copiar enlace</button>
+  </div>
+</aside>
 
-            tree(500, 700, Math.PI / 2, 10, 200, ctx);
-        }
+<main>
+  <canvas id="treeCanvas"></canvas>
+  <div id="stats"></div>
+  <div id="toast"></div>
+</main>
 
-        drawTree();
-    </script>
+<script>
+'use strict';
+
+/* ---------- Ajustes y estilos predefinidos ---------- */
+
+// "Clásico" reproduce el método original: 3 ramas, apertura 60°, divisor de ángulo
+// 1.5 + azar·2.5, divisor de longitud 1.2 + azar, rama central = ángulo / divisor.
+const PRESETS = {
+  'Clásico (original)': {
+    depth: 10, branches: 3, centerPull: true, spread: 60, angleRand: 1, shrink: 1.2, lenRand: 1,
+    wind: 0, prune: 0, trunkWidth: 2, taper: 1, leafSize: 0, leafDensity: 0,
+    trunkColor: '#000000', tipColor: '#000000', leafColor: '#3c8d3c', bgColor: '#ffffff'
+  },
+  'Roble frondoso': {
+    depth: 10, branches: 3, centerPull: true, spread: 70, angleRand: 1, shrink: 1.25, lenRand: 0.6,
+    wind: 0, prune: 0.12, trunkWidth: 22, taper: 0.66, leafSize: 5, leafDensity: 0.9,
+    trunkColor: '#4a3222', tipColor: '#6b5a3a', leafColor: '#3f8f3a', bgColor: '#eaf3f7'
+  },
+  'Cerezo en flor': {
+    depth: 11, branches: 3, centerPull: true, spread: 75, angleRand: 1.2, shrink: 1.28, lenRand: 0.5,
+    wind: 0.8, prune: 0.18, trunkWidth: 16, taper: 0.65, leafSize: 4.5, leafDensity: 0.85,
+    trunkColor: '#3b2a2a', tipColor: '#5a3f3f', leafColor: '#f4a7c0', bgColor: '#fdf6f0'
+  },
+  'Otoño': {
+    depth: 10, branches: 3, centerPull: true, spread: 65, angleRand: 1, shrink: 1.24, lenRand: 0.7,
+    wind: -1.2, prune: 0.15, trunkWidth: 18, taper: 0.67, leafSize: 5, leafDensity: 0.75,
+    trunkColor: '#3d2b1f', tipColor: '#6e4b2a', leafColor: '#e0762b', bgColor: '#f7ecd9'
+  },
+  'Sauce al viento': {
+    depth: 13, branches: 2, centerPull: false, spread: 38, angleRand: 0.8, shrink: 1.12, lenRand: 0.25,
+    wind: 6, prune: 0.05, trunkWidth: 14, taper: 0.75, leafSize: 2.5, leafDensity: 0.7,
+    trunkColor: '#3a3326', tipColor: '#7a8a4a', leafColor: '#9cc26a', bgColor: '#eef3e6'
+  },
+  'Invierno nocturno': {
+    depth: 12, branches: 2, centerPull: false, spread: 50, angleRand: 1.3, shrink: 1.18, lenRand: 0.4,
+    wind: 0, prune: 0.08, trunkWidth: 12, taper: 0.72, leafSize: 1.5, leafDensity: 0.25,
+    trunkColor: '#c9d6e3', tipColor: '#7f93a8', leafColor: '#ffffff', bgColor: '#0f1724'
+  },
+  'Neón': {
+    depth: 11, branches: 3, centerPull: false, spread: 90, angleRand: 0.6, shrink: 1.35, lenRand: 0.3,
+    wind: 0, prune: 0, trunkWidth: 6, taper: 0.8, leafSize: 2, leafDensity: 1,
+    trunkColor: '#ff3cac', tipColor: '#2b86c5', leafColor: '#00ffd5', bgColor: '#0b0b12'
+  }
+};
+
+const NUMERIC = ['depth', 'branches', 'spread', 'angleRand', 'shrink', 'lenRand', 'wind', 'prune',
+  'trunkWidth', 'taper', 'leafSize', 'leafDensity', 'duration'];
+const COLORS = ['trunkColor', 'tipColor', 'leafColor', 'bgColor'];
+const BOOLS = ['centerPull', 'transparent', 'animate'];
+const FORMAT = {
+  spread: v => v + '°', wind: v => v + '°/nivel', prune: v => Math.round(v * 100) + ' %',
+  leafDensity: v => Math.round(v * 100) + ' %', duration: v => v + ' s',
+  shrink: v => '÷ ' + v, angleRand: v => '× ' + v, lenRand: v => '+ ' + v
+};
+const MAX_SEGMENTS = 350000;
+
+const $ = id => document.getElementById(id);
+const canvas = $('treeCanvas');
+const ctx = canvas.getContext('2d');
+
+let params = {};
+let tree = null;
+let anim = null;
+
+/* ---------- Números aleatorios con semilla ---------- */
+
+function hashString(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function randomSeed() {
+  return Math.random().toString(36).slice(2, 8);
+}
+
+/* ---------- Generación (mismo método recursivo del original) ---------- */
+
+function maxDepthFor(branches) {
+  let total = 0, n = 1, d = 0;
+  while (total + n <= MAX_SEGMENTS) { total += n; n *= branches; d++; }
+  return d;
+}
+
+function buildTree(p) {
+  const rand = mulberry32(hashString(p.seed));
+  const depth = Math.min(p.depth, maxDepthFor(p.branches));
+  const levels = Array.from({ length: depth }, () => []);
+  const tips = [];
+  const angleDivMin = 1.5, angleDivRange = 2.5 * p.angleRand;
+  const pi = Math.PI;
+
+  // Igual que tree(x, y, angle, depth, branch_length) del original:
+  // cada rama se dibuja y genera hijas con ángulo ± apertura / (1.5 + azar·2.5)
+  // y longitud / (1.2 + azar).
+  function tree(x, y, angle, d, len) {
+    const x2 = x + Math.cos(angle * (pi / 180) - pi / 2) * len;
+    const y2 = y + Math.sin(angle * (pi / 180) - pi / 2) * len;
+    levels[depth - d].push(x, y, x2, y2);
+
+    if (d === 1) { tips.push(x2, y2, angle); return; }
+
+    const next = a => {
+      if (p.prune > 0 && rand() < p.prune) return;
+      tree(x2, y2, a + p.wind, d - 1, len / (p.shrink + rand() * p.lenRand));
+    };
+    next(angle - p.spread / (angleDivMin + rand() * angleDivRange));
+    next(angle + p.spread / (angleDivMin + rand() * angleDivRange));
+    if (p.branches === 3) {
+      next(p.centerPull ? angle / (angleDivMin + rand() * angleDivRange) : angle);
+    }
+  }
+  tree(0, 0, 0, depth, 200);
+
+  // Hojas en las puntas, con ligera variación de tono agrupada en 5 tonos
+  const leaves = [[], [], [], [], []];
+  if (p.leafSize > 0 && p.leafDensity > 0) {
+    for (let i = 0; i < tips.length; i += 3) {
+      const count = rand() < p.leafDensity ? (rand() < 0.5 ? 1 : 2) : 0;
+      for (let k = 0; k < count; k++) {
+        const r = p.leafSize * (0.6 + rand() * 0.8);
+        const ox = (rand() - 0.5) * p.leafSize * 2;
+        const oy = (rand() - 0.5) * p.leafSize * 2;
+        leaves[Math.floor(rand() * 5)].push(tips[i] + ox, tips[i + 1] + oy, r);
+      }
+    }
+  }
+
+  // Caja envolvente para ajustar el árbol al lienzo
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const extend = (x, y, pad) => {
+    if (x - pad < minX) minX = x - pad; if (x + pad > maxX) maxX = x + pad;
+    if (y - pad < minY) minY = y - pad; if (y + pad > maxY) maxY = y + pad;
+  };
+  levels.forEach((seg, i) => {
+    const pad = widthAt(p, i, depth) / 2;
+    for (let j = 0; j < seg.length; j += 4) { extend(seg[j], seg[j + 1], pad); extend(seg[j + 2], seg[j + 3], pad); }
+  });
+  leaves.forEach(g => { for (let j = 0; j < g.length; j += 3) extend(g[j], g[j + 1], g[j + 2]); });
+
+  const segments = levels.reduce((s, l) => s + l.length / 4, 0);
+  const leafCount = leaves.reduce((s, l) => s + l.length / 3, 0);
+  return { levels, leaves, depth, segments, leafCount, bounds: { minX, minY, maxX, maxY } };
+}
+
+function widthAt(p, level) {
+  return Math.max(0.35, p.trunkWidth * Math.pow(p.taper, level));
+}
+
+/* ---------- Dibujo ---------- */
+
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function mix(a, b, t) {
+  const A = hexToRgb(a), B = hexToRgb(b);
+  return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',')})`;
+}
+function shade(hex, amount) {
+  const c = hexToRgb(hex).map(v => Math.max(0, Math.min(255, Math.round(v + amount))));
+  return `rgb(${c.join(',')})`;
+}
+
+// progress: número de niveles dibujados (puede ser fraccionario); Infinity = completo
+function render(target, W, H, p, t, progress = Infinity, transparent = false) {
+  target.save();
+  target.clearRect(0, 0, W, H);
+  if (!transparent) { target.fillStyle = p.bgColor; target.fillRect(0, 0, W, H); }
+
+  const b = t.bounds;
+  const bw = b.maxX - b.minX, bh = b.maxY - b.minY;
+  const pad = Math.min(W, H) * 0.05;
+  const s = Math.min((W - pad * 2) / bw, (H - pad * 2) / bh);
+  // Centrado horizontal, apoyado en la base del lienzo
+  target.translate(W / 2 - (b.minX + bw / 2) * s, H - pad - b.maxY * s);
+  target.scale(s, s);
+  target.lineCap = 'round';
+
+  const n = t.levels.length;
+  for (let i = 0; i < n; i++) {
+    if (progress <= i) break;
+    const f = Math.min(1, progress - i);
+    const seg = t.levels[i];
+    target.strokeStyle = mix(p.trunkColor, p.tipColor, n > 1 ? i / (n - 1) : 0);
+    target.lineWidth = widthAt(p, i);
+    target.beginPath();
+    for (let j = 0; j < seg.length; j += 4) {
+      target.moveTo(seg[j], seg[j + 1]);
+      target.lineTo(seg[j] + (seg[j + 2] - seg[j]) * f, seg[j + 1] + (seg[j + 3] - seg[j + 1]) * f);
+    }
+    target.stroke();
+  }
+
+  const leafAlpha = Math.max(0, Math.min(1, progress - n));
+  if (leafAlpha > 0) {
+    target.globalAlpha = leafAlpha * 0.9;
+    t.leaves.forEach((g, k) => {
+      if (!g.length) return;
+      target.fillStyle = shade(p.leafColor, (k - 2) * 14);
+      target.beginPath();
+      for (let j = 0; j < g.length; j += 3) {
+        target.moveTo(g[j] + g[j + 2], g[j + 1]);
+        target.arc(g[j], g[j + 1], g[j + 2], 0, Math.PI * 2);
+      }
+      target.fill();
+    });
+  }
+  target.restore();
+}
+
+function draw(progress = Infinity) {
+  if (!tree) return;
+  render(ctx, canvas.width, canvas.height, params, tree, progress);
+}
+
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const r = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(r.width * dpr));
+  canvas.height = Math.max(1, Math.round(r.height * dpr));
+  if (!anim) draw();
+}
+
+function stopAnimation() {
+  if (anim) { cancelAnimationFrame(anim); anim = null; }
+}
+
+function animateGrowth() {
+  stopAnimation();
+  const total = tree.levels.length + (tree.leafCount ? 1 : 0);
+  const start = performance.now();
+  const ms = params.duration * 1000;
+  const step = now => {
+    const k = Math.min(1, (now - start) / ms);
+    const eased = 1 - Math.pow(1 - k, 2);
+    draw(eased * total);
+    anim = k < 1 ? requestAnimationFrame(step) : null;
+  };
+  anim = requestAnimationFrame(step);
+}
+
+/* ---------- Interfaz ---------- */
+
+function readParams() {
+  const p = { seed: $('seed').value.trim() || '0' };
+  NUMERIC.forEach(k => p[k] = parseFloat($(k).value));
+  COLORS.forEach(k => p[k] = $(k).value);
+  BOOLS.forEach(k => p[k] = $(k).checked);
+  return p;
+}
+
+function writeParams(p) {
+  if (p.seed !== undefined) $('seed').value = p.seed;
+  NUMERIC.forEach(k => { if (p[k] !== undefined) $(k).value = p[k]; });
+  COLORS.forEach(k => { if (p[k] !== undefined) $(k).value = p[k]; });
+  BOOLS.forEach(k => { if (p[k] !== undefined) $(k).checked = p[k]; });
+}
+
+function updateOutputs() {
+  const p = readParams();
+  NUMERIC.forEach(k => {
+    const o = $(k + 'Out');
+    if (o) o.textContent = FORMAT[k] ? FORMAT[k](p[k]) : p[k];
+  });
+  const maxD = maxDepthFor(p.branches);
+  $('depth').max = maxD;
+  if (p.depth > maxD) { $('depth').value = maxD; $('depthOut').textContent = maxD; }
+  $('centerPull').disabled = p.branches !== 3;
+  $('duration').disabled = !p.animate;
+}
+
+function regenerate(animate = false) {
+  updateOutputs();
+  params = readParams();
+  tree = buildTree(params);
+  $('stats').textContent =
+    `${tree.segments.toLocaleString('es')} ramas · ${tree.leafCount.toLocaleString('es')} hojas · semilla «${params.seed}»`;
+  history.replaceState(null, '', '#' + serialize(params));
+  if (animate && params.animate) animateGrowth();
+  else { stopAnimation(); draw(); }
+}
+
+function serialize(p) {
+  const q = new URLSearchParams();
+  q.set('seed', p.seed);
+  NUMERIC.forEach(k => q.set(k, p[k]));
+  COLORS.forEach(k => q.set(k, p[k].slice(1)));
+  BOOLS.forEach(k => q.set(k, p[k] ? 1 : 0));
+  return q.toString();
+}
+
+function deserialize(hash) {
+  const q = new URLSearchParams(hash.replace(/^#/, ''));
+  if (!q.has('seed')) return null;
+  const p = { seed: q.get('seed') };
+  NUMERIC.forEach(k => { if (q.has(k) && !isNaN(parseFloat(q.get(k)))) p[k] = parseFloat(q.get(k)); });
+  COLORS.forEach(k => { if (/^[0-9a-f]{6}$/i.test(q.get(k) || '')) p[k] = '#' + q.get(k); });
+  BOOLS.forEach(k => { if (q.has(k)) p[k] = q.get(k) === '1'; });
+  return p;
+}
+
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => el.classList.remove('show'), 1600);
+}
+
+function newTree() {
+  $('seed').value = randomSeed();
+  regenerate(true);
+}
+
+function exportPng() {
+  const size = 2400;
+  const off = document.createElement('canvas');
+  const aspect = canvas.width / canvas.height || 1;
+  off.width = aspect >= 1 ? size : Math.round(size * aspect);
+  off.height = aspect >= 1 ? Math.round(size / aspect) : size;
+  render(off.getContext('2d'), off.width, off.height, params, tree, Infinity, params.transparent);
+  off.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `arbol-${params.seed}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+}
+
+function init() {
+  const sel = $('preset');
+  Object.keys(PRESETS).forEach(name => sel.add(new Option(name, name)));
+  sel.add(new Option('Personalizado', 'custom'));
+
+  writeParams({ ...PRESETS['Roble frondoso'], animate: true, duration: 1.8, transparent: false });
+  sel.value = 'Roble frondoso';
+
+  const fromUrl = deserialize(location.hash);
+  if (fromUrl) { writeParams(fromUrl); sel.value = 'custom'; }
+  else $('seed').value = randomSeed();
+
+  sel.addEventListener('change', () => {
+    if (sel.value === 'custom') return;
+    writeParams(PRESETS[sel.value]);
+    regenerate(true);
+  });
+
+  document.querySelectorAll('aside input').forEach(el => {
+    const structural = el.id !== 'animate' && el.id !== 'duration' && el.id !== 'transparent';
+    el.addEventListener('input', () => {
+      if (el.id === 'seed') return;
+      if (structural && el.id !== 'seed') sel.value = 'custom';
+      regenerate(false);
+    });
+  });
+  $('seed').addEventListener('change', () => regenerate(true));
+  $('seed').addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); regenerate(true); } });
+
+  $('btnNew').addEventListener('click', newTree);
+  $('btnRedraw').addEventListener('click', () => regenerate(true));
+  $('btnPng').addEventListener('click', exportPng);
+  $('btnLink').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(location.href); toast('Enlace copiado'); }
+    catch { toast('No se pudo copiar el enlace'); }
+  });
+
+  document.addEventListener('keydown', e => {
+    const tag = e.target.tagName;
+    if ((e.key === ' ' || e.key === 'Enter') && tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'BUTTON') {
+      e.preventDefault();
+      newTree();
+    }
+  });
+
+  new ResizeObserver(resizeCanvas).observe(canvas);
+  resizeCanvas();
+  regenerate(true);
+}
+
+init();
+</script>
 </body>
 </html>
